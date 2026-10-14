@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # BullMQ Redis broker (equivalent to Sidekiq's Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: halal_restaurants_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Bull-Board Web Dashboard (Sidekiq Web equivalent)
+  # Allows monitoring queued, active, delayed, and failed sync jobs
+  bull-board:
+    image: felixmosh/bull-board:latest
+    container_name: halal_restaurants_bull_board
+    ports:
+      - '3000:3000'
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - BULL_QUEUES=restaurant-sync
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+

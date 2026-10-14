@@ -1,0 +1,14 @@
+{
+  "name": "@halal-restaurants/worker",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@halal-restaurants/database": "*",
+    "@halal-restaurants/jobs": "*",
+    "@halal-restaurants/scrapers": "*",
+    "@halal-restaurants/types": "*"
+  }
+}
+

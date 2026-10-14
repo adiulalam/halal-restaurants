@@ -1,0 +1,30 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2022",
+    "module": "esnext",
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "lib": ["es2022", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@halal-restaurants/types": ["libs/types/src/index.ts"],
+      "@halal-restaurants/database": ["libs/database/src/index.ts"],
+      "@halal-restaurants/scrapers": ["libs/scrapers/src/index.ts"],
+      "@halal-restaurants/jobs": ["libs/jobs/src/index.ts"],
+      "@halal-restaurants/ui": ["libs/ui/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp", "dist"]
+}
+

@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Halal KFC UK",
+    "slug": "halal-kfc-uk",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#E4002B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.halalrestaurants.kfc"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E4002B"
+      },
+      "package": "com.halalrestaurants.kfc"
+    }
+  }
+}
+
