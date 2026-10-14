@@ -126,6 +126,50 @@ export const MobileRestaurantListSchema = z.array(MobileRestaurantItemSchema);
 
 /**
  * -------------------------------------------------------------
+ * API Query & Filter Schemas
+ * -------------------------------------------------------------
+ */
+
+export const RestaurantQuerySchema = z.object({
+  chain: z.enum(['kfc', 'nandos', 'all']).default('all'),
+  halal: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true'))
+    .optional(),
+  q: z.string().optional(),
+  lat: z.coerce.number().optional(),
+  lng: z.coerce.number().optional(),
+  radius: z.coerce.number().positive().default(10),
+  driveThru: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true'))
+    .optional(),
+  outdoorSeating: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true'))
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+  offset: z.coerce.number().int().min(0).default(0)
+});
+
+export const NearbyQuerySchema = z.object({
+  chain: z.enum(['kfc', 'nandos', 'all']).default('all'),
+  lat: z.coerce.number(),
+  lng: z.coerce.number(),
+  radius: z.coerce.number().positive().default(10),
+  halal: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true'))
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(30)
+});
+
+/**
+ * -------------------------------------------------------------
  * Inferred Types from Zod
  * -------------------------------------------------------------
  */
@@ -134,4 +178,6 @@ export type KfcRestaurantInput = z.infer<typeof KfcRestaurantInputSchema>;
 export type NandosRestaurantInput = z.infer<typeof NandosRestaurantInputSchema>;
 export type MobileRestaurantItem = z.infer<typeof MobileRestaurantItemSchema>;
 export type MobileRestaurantList = z.infer<typeof MobileRestaurantListSchema>;
+export type RestaurantQuery = z.infer<typeof RestaurantQuerySchema>;
+export type NearbyQuery = z.infer<typeof NearbyQuerySchema>;
 

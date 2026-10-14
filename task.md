@@ -163,20 +163,30 @@ halal-restaurants/
 ---
 
 ### Phase 6: API Service & Production Deployment
-- [ ] **6.1 Mobile Backend API (`apps/api`)**
-  - Build fast spatial query endpoints:
-    - `GET /api/v1/restaurants/nearby?chain=kfc&lat=...&lng=...&halal=true&petFriendly=true`
-    - `GET /api/v1/restaurants/:id`
-    - `GET /api/v1/restaurants/search?q=London`
-- [ ] **6.2 Dockerization & Deployment**
-  - Multi-stage Dockerfiles for `apps/api` and `apps/worker`.
-  - Production deployment configuration (Render / Railway / VPS / AWS ECS).
-  - Setup EAS (Expo Application Services) build config for iOS & Android app binaries.
+- [x] **6.1 Mobile Backend API (`apps/api`)**
+  - Built high-performance Fastify REST service with CORS, logging, and error handling.
+  - Implemented endpoints:
+    - `GET /health` and `GET /api/v1/health`: System health and uptime.
+    - `GET /api/v1/stats`: Chain breakdown (total, halal, percentage) and recent scrape audit logs.
+    - `GET /api/v1/chains`: Chain metadata, branding tokens, and supported filter attributes.
+    - `GET /api/v1/restaurants`: Text search (`q`), Halal toggle (`halal`), chain filter (`chain`), amenities filter (`driveThru`, `outdoorSeating`), pagination (`limit`, `offset`).
+    - `GET /api/v1/restaurants/nearby`: GPS spatial queries (`lat`, `lng`, `radius`) computing distance via Haversine formula and sorting ascending by proximity.
+    - `GET /api/v1/restaurants/kfc/:id`: Deep store details including parsed facilities, order modes, and opening hours.
+    - `GET /api/v1/restaurants/nandos/:id`: Deep branch details including parsed amenities, order channels, and opening hours.
+  - Strict input validation using Zod (`RestaurantQuerySchema`, `NearbyQuerySchema`) returning formatted 400 Bad Request on invalid parameters.
+- [x] **6.2 Dockerization & Deployment**
+  - Multi-stage `Dockerfile.api` and `Dockerfile.worker` built on lightweight `node:22-alpine` with Prisma client generation and SQLite persistence volume (`/app/data`).
+  - Production `docker/docker-compose.yml` orchestrating Redis, Bull-Board UI, Fastify REST API, and BullMQ Background Scraper Worker.
+  - Configured EAS (Expo Application Services) build profiles (`eas.json`) for `apps/mobile-kfc` and `apps/mobile-nandos` targeting internal preview APKs and production app store bundles (`app-bundle`, `.ipa`).
 
 ---
 
-## 5. Next Immediate Step
-Begin with **Phase 6: Mobile Backend API Service (`apps/api`) & Production Deployment**:
-1. Build lightweight REST API service (`apps/api`) exposing nearby and search endpoints with Haversine distance.
-2. Setup production Dockerfiles and containerization.
+## 5. Project Status: COMPLETED
+All 6 phases are complete, fully validated, and verified:
+1. Reverse engineering & verified direct extractors for KFC UK (1,061 restaurants, 225 Halal) and Nando's UK (490 restaurants, 107 Halal).
+2. Monorepo foundation with Nx, SQLite via Prisma, and scalable table-per-restaurant schema.
+3. BullMQ background job processing with repeatable 03:00 AM cron scheduler and Bull-Board dashboard.
+4. Shared mobile & web UI component library with brand design tokens and performance-optimized memoized components.
+5. Dedicated Halal KFC and Halal Nando's mobile & web apps with TanStack Query and bundled offline datasets.
+6. Mobile backend REST API service (`apps/api`), multi-stage Dockerfiles, Docker Compose stack, and EAS build configuration.
 

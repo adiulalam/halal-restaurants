@@ -21,9 +21,11 @@
   ],
   "dependencies": {
     "@expo/metro-runtime": "^57.0.17",
+    "@fastify/cors": "^11.3.1",
     "@prisma/client": "^6.4.1",
     "@tanstack/react-query": "^5.104.2",
     "bullmq": "^6.3.15",
+    "fastify": "^5.12.7",
     "ioredis": "^6.0.0",
     "react-dom": "^19.3.1",
     "react-native-web": "^0.21.4",

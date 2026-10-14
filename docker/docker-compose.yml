@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # BullMQ Redis broker (equivalent to Sidekiq's Redis)
+  # BullMQ Redis broker (equivalent to Sidekiq's Redis broker)
   redis:
     image: redis:7-alpine
     container_name: halal_restaurants_redis
@@ -17,8 +17,8 @@ services:
       timeout: 3s
       retries: 5
 
-  # Bull-Board Web Dashboard (Sidekiq Web equivalent)
-  # Allows monitoring queued, active, delayed, and failed sync jobs
+  # Bull-Board Web Dashboard (Sidekiq Web UI equivalent)
+  # Allows monitoring queued, active, completed, and failed sync jobs
   bull-board:
     image: felixmosh/bull-board:latest
     container_name: halal_restaurants_bull_board
@@ -33,6 +33,40 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Fastify REST API Service
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: halal_restaurants_api
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=file:/app/data/dev.db
+    volumes:
+      - db_data:/app/data
+    restart: unless-stopped
+
+  # BullMQ Background Worker Service
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: halal_restaurants_worker
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=file:/app/data/dev.db
+    volumes:
+      - db_data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   redis_data:
-
+  db_data:
