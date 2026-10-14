@@ -149,10 +149,16 @@ halal-restaurants/
 ### Phase 5: Mobile Applications (`apps/mobile-kfc` & `apps/mobile-nandos`)
 - [x] **5.1 Halal KFC Mobile App (`apps/mobile-kfc`)**
   - Built React Native / Expo application with KFC branding.
-  - Features: Halal-only toggle (225 branches), drive-thru filter, search bar, restaurant card list, Google Maps navigation.
+  - Integrated **TanStack Query** (`useRestaurants`) with bundled offline JSON (`assets/kfc-offline-data.json`, 1,061 restaurants).
+  - Features: Instant first-load & offline view, Halal-only toggle (225 branches), drive-thru filter, search bar, restaurant card list, Google Maps navigation.
 - [x] **5.2 Halal Nando's Mobile App (`apps/mobile-nandos`)**
   - Built React Native / Expo application with Nando's branding.
-  - Features: Halal-only toggle (107 branches), outdoor seating filter, search bar, restaurant card list, Google Maps navigation.
+  - Integrated **TanStack Query** (`useRestaurants`) with bundled offline JSON (`assets/nandos-offline-data.json`, 490 restaurants).
+  - Features: Instant first-load & offline view, Halal-only toggle (107 branches), outdoor seating filter, search bar, restaurant card list, Google Maps navigation.
+- [x] **5.3 Zod Schema Validation & Data Integrity**
+  - Defined strict Zod schemas in `libs/types/src/schemas.ts` for KFC (`KfcRestaurantInputSchema`), Nando's (`NandosRestaurantInputSchema`), and mobile query items (`MobileRestaurantItemSchema`).
+  - Scraper pipeline (`libs/scrapers`) and BullMQ background worker (`libs/jobs/src/workers.ts`) validate all records before database upsertion.
+  - Bundled offline JSON files are 100% pre-validated against Zod schemas.
 
 ---
 
@@ -170,8 +176,7 @@ halal-restaurants/
 ---
 
 ## 5. Next Immediate Step
-Begin with **Phase 2: Monorepo Foundation with Nx**:
-1. Scaffold the Nx monorepo workspace in `c:\Homespace\halal-restaurants`.
-2. Configure Docker Compose for Redis (BullMQ queue broker) + PostgreSQL/PostGIS.
-3. Setup shared database and domain type packages (`libs/types` and `libs/database`).
+Begin with **Phase 6: Mobile Backend API Service (`apps/api`) & Production Deployment**:
+1. Build lightweight REST API service (`apps/api`) exposing nearby and search endpoints with Haversine distance.
+2. Setup production Dockerfiles and containerization.
 

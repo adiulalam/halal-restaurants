@@ -1,4 +1,4 @@
-import type { NandosRestaurantInput } from '@halal-restaurants/types';
+import { NandosRestaurantInputSchema, type NandosRestaurantInput } from '@halal-restaurants/types';
 
 export const NANDOS_PAGE_URL = 'https://www.nandos.co.uk/restaurants';
 
@@ -30,7 +30,6 @@ export async function scrapeNandosUk(): Promise<NandosRestaurantInput[]> {
     }
   }
 
-  // Find all "restaurants":[ occurrences in the stream
   const marker = '"restaurants":[';
   let pos = 0;
   const positions: number[] = [];
@@ -68,29 +67,28 @@ export async function scrapeNandosUk(): Promise<NandosRestaurantInput[]> {
     }
   }
 
-  // Deduplicate by branchCode
   const uniqueMap = new Map<string, NandosRestaurantInput>();
 
   for (const r of rawRestaurants) {
-    const branchCode = r.details?.branchCode || r.details?.slug;
+    const branchCode = String(r.details?.branchCode || r.details?.slug || '').trim();
     if (!branchCode || uniqueMap.has(branchCode)) continue;
 
     const amenities: string[] = r.amenities || [];
     const isHalal = amenities.includes('HALAL');
 
-    uniqueMap.set(branchCode, {
+    const candidate = {
       branchCode,
-      name: r.details?.name,
-      slug: r.details?.slug,
-      seoSlug: r.details?.seoSlug,
-      street: r.geo?.address?.streetAddress,
-      city: r.geo?.address?.addressLocality,
-      postalCode: r.geo?.address?.postalCode,
+      name: r.details?.name ? String(r.details.name).trim() : 'Unknown Nando\'s',
+      slug: r.details?.slug ? String(r.details.slug) : null,
+      seoSlug: r.details?.seoSlug ? String(r.details.seoSlug) : null,
+      street: r.geo?.address?.streetAddress ? String(r.geo.address.streetAddress).trim() : null,
+      city: r.geo?.address?.addressLocality ? String(r.geo.address.addressLocality).trim() : null,
+      postalCode: r.geo?.address?.postalCode ? String(r.geo.address.postalCode).trim() : null,
       country: r.geo?.address?.addressCountry || 'GB',
-      latitude: r.geo?.latitude,
-      longitude: r.geo?.longitude,
-      region: r.geo?.region,
-      telephone: r.contact?.telephone,
+      latitude: typeof r.geo?.latitude === 'number' ? r.geo.latitude : null,
+      longitude: typeof r.geo?.longitude === 'number' ? r.geo.longitude : null,
+      region: r.geo?.region ? String(r.geo.region).trim() : null,
+      telephone: r.contact?.telephone ? String(r.contact.telephone).trim() : null,
       isHalal,
       hasOutdoorSeating: amenities.includes('OUTDOOR_EATING_AREA'),
       hasBabyChanging: amenities.includes('BABY_CHANGING'),
@@ -98,15 +96,22 @@ export async function scrapeNandosUk(): Promise<NandosRestaurantInput[]> {
       hasWifi: amenities.includes('WIFI'),
       hasDelivery: amenities.includes('DELIVERY'),
       hasCollection: amenities.includes('COLLECTION'),
-      status: r.restaurantStatus,
-      mapCID: r.mapCID,
+      status: r.restaurantStatus ? String(r.restaurantStatus) : null,
+      mapCID: r.mapCID ? String(r.mapCID) : null,
       amenitiesJson: JSON.stringify(amenities),
       orderChannelsJson: JSON.stringify(r.orderChannels || {}),
       openingHoursJson: JSON.stringify(r.openingHoursSpecification || []),
       detailUrl: r.details?.slug ? `https://www.nandos.co.uk/restaurants/${r.details.slug}` : null
-    });
+    };
+
+    // Zod validation check
+    const parseResult = NandosRestaurantInputSchema.safeParse(candidate);
+    if (parseResult.success) {
+      uniqueMap.set(branchCode, parseResult.data);
+    } else {
+      console.warn(`[Nando's Scraper] Validation skipped invalid record branchCode=${branchCode}:`, parseResult.error.format());
+    }
   }
 
   return Array.from(uniqueMap.values());
 }
-

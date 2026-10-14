@@ -9,165 +9,135 @@ import {
   StatusBar,
   Linking
 } from 'react-native';
-import { BrandThemeProvider, NANDOS_THEME, RestaurantCard, AmenityChip } from '@halal-restaurants/ui';
+import { QueryClientProvider } from '@tanstack/react-query';
+import {
+  BrandThemeProvider,
+  NANDOS_THEME,
+  RestaurantCard,
+  AmenityChip,
+  createAppQueryClient,
+  useRestaurants
+} from '@halal-restaurants/ui';
+import nandosOfflineData from './assets/nandos-offline-data.json';
 
-const SAMPLE_NANDOS_STORES = [
-  {
-    branchCode: 'N113',
-    name: 'Baker Street',
-    street: '113, Baker St',
-    city: 'Marylebone, London',
-    postalCode: 'W1U 6RS',
-    isHalal: true,
-    hasOutdoorSeating: true,
-    hasDisabledAccess: true,
-    distanceMiles: 0.5,
-    amenities: ['HALAL', 'OUTDOOR_EATING_AREA', 'DISABLED_ACCESS', 'BABY_CHANGING', 'WIFI'],
-    status: 'open'
-  },
-  {
-    branchCode: 'N524',
-    name: 'Liverpool Street Station',
-    street: 'Unit 44, Concourse',
-    city: 'London',
-    postalCode: 'EC2M 7PY',
-    isHalal: true,
-    hasOutdoorSeating: false,
-    hasDisabledAccess: true,
-    distanceMiles: 1.2,
-    amenities: ['HALAL', 'DISABLED_ACCESS', 'WIFI', 'COLLECTION'],
-    status: 'open'
-  },
-  {
-    branchCode: 'N133',
-    name: 'The Brunswick',
-    street: 'Unit 19, The Brunswick',
-    city: 'Bloomsbury, London',
-    postalCode: 'WC1N 1BS',
-    isHalal: true,
-    hasOutdoorSeating: true,
-    hasDisabledAccess: true,
-    distanceMiles: 1.4,
-    amenities: ['HALAL', 'OUTDOOR_EATING_AREA', 'CINEMA', 'WIFI'],
-    status: 'open'
-  },
-  {
-    branchCode: 'N042',
-    name: 'Covent Garden',
-    street: '66-68 St Martins Lane',
-    city: 'London',
-    postalCode: 'WC2N 4JS',
-    isHalal: false,
-    hasOutdoorSeating: false,
-    hasDisabledAccess: true,
-    distanceMiles: 1.1,
-    amenities: ['DISABLED_ACCESS', 'BABY_CHANGING', 'WIFI', 'DELIVERY'],
-    status: 'open'
-  },
-  {
-    branchCode: 'N380',
-    name: 'Colindale',
-    street: 'Unit 2, Beaufort Park',
-    city: 'Colindale, London',
-    postalCode: 'NW9 5JN',
-    isHalal: true,
-    hasOutdoorSeating: true,
-    hasDisabledAccess: true,
-    distanceMiles: 5.8,
-    amenities: ['HALAL', 'OUTDOOR_EATING_AREA', 'DISABLED_ACCESS', 'WIFI'],
-    status: 'open'
-  }
-];
+const queryClient = createAppQueryClient();
 
-export default function App() {
+function NandosStoreFinderScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [onlyHalal, setOnlyHalal] = useState(true);
   const [onlyOutdoor, setOnlyOutdoor] = useState(false);
 
+  // TanStack Query: loads bundled offline JSON on first open or offline, and syncs when online
+  const { data: stores = [], isLoading } = useRestaurants({
+    queryKey: ['nandos-restaurants'],
+    offlineData: nandosOfflineData
+  });
+
   const filteredStores = useMemo(() => {
-    return SAMPLE_NANDOS_STORES.filter((store) => {
+    return stores.filter((store) => {
       if (onlyHalal && !store.isHalal) return false;
-      if (onlyOutdoor && !store.hasOutdoorSeating) return false;
+      if (onlyOutdoor) {
+        const hasOutdoor = (store.amenitiesList || []).includes('OUTDOOR_EATING_AREA');
+        if (!hasOutdoor) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName = store.name.toLowerCase().includes(q);
-        const matchesCity = store.city.toLowerCase().includes(q);
-        const matchesPostcode = store.postalCode.toLowerCase().includes(q);
+        const matchesCity = store.city ? store.city.toLowerCase().includes(q) : false;
+        const matchesPostcode = store.postalCode ? store.postalCode.toLowerCase().includes(q) : false;
         if (!matchesName && !matchesCity && !matchesPostcode) return false;
       }
       return true;
     });
-  }, [searchQuery, onlyHalal, onlyOutdoor]);
+  }, [stores, searchQuery, onlyHalal, onlyOutdoor]);
 
   const handleOpenDirections = (store: any) => {
-    const query = encodeURIComponent(`Nando's ${store.name}, ${store.street}, ${store.postalCode}`);
+    const addressPart = [store.name, store.street, store.postalCode].filter(Boolean).join(', ');
+    const query = encodeURIComponent(`Nando's, ${addressPart}`);
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
   };
 
+  const totalHalalInUk = useMemo(() => stores.filter((s) => s.isHalal).length, [stores]);
+
   return (
-    <BrandThemeProvider theme={NANDOS_THEME}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#BA1B1D" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#BA1B1D" />
 
-        {/* Brand Header */}
-        <View style={styles.header}>
-          <Text style={styles.brandTitle}>HALAL NANDO'S UK</Text>
-          <Text style={styles.brandSubtitle}>Find 100% Halal Certified Nando's Across the UK</Text>
-        </View>
+      {/* Brand Header */}
+      <View style={styles.header}>
+        <Text style={styles.brandTitle}>HALAL NANDO'S UK</Text>
+        <Text style={styles.brandSubtitle}>
+          Offline-Ready • TanStack Query • {totalHalalInUk} Halal Verified
+        </Text>
+      </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            placeholder="Search town, postcode or branch..."
-            placeholderTextColor="#888"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-
-        {/* Filter Chips */}
-        <View style={styles.filterRow}>
-          <AmenityChip
-            label={onlyHalal ? '✓ Halal Only (107 in UK)' : 'All Stores (490)'}
-            active={onlyHalal}
-            onPress={() => setOnlyHalal(!onlyHalal)}
-          />
-          <AmenityChip
-            label="Outdoor Seating"
-            active={onlyOutdoor}
-            onPress={() => setOnlyOutdoor(!onlyOutdoor)}
-          />
-        </View>
-
-        {/* Results Counter */}
-        <View style={styles.resultsBar}>
-          <Text style={styles.resultsCount}>
-            Showing {filteredStores.length} {onlyHalal ? 'Halal' : ''} Nando's restaurants
-          </Text>
-        </View>
-
-        {/* Store List */}
-        <FlatList
-          data={filteredStores}
-          keyExtractor={(item) => item.branchCode}
-          renderItem={({ item }) => (
-            <RestaurantCard
-              name={item.name}
-              street={item.street}
-              city={item.city}
-              postalCode={item.postalCode}
-              distanceMiles={item.distanceMiles}
-              isHalal={item.isHalal}
-              amenitiesList={item.amenities}
-              status={item.status}
-              onPress={() => handleOpenDirections(item)}
-            />
-          )}
-          contentContainerStyle={styles.listContent}
+      {/* Search Input */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Search town, postcode or branch (e.g. Baker Street, W1U 6RS)..."
+          placeholderTextColor="#888"
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
-      </SafeAreaView>
-    </BrandThemeProvider>
+      </View>
+
+      {/* Filter Chips */}
+      <View style={styles.filterRow}>
+        <AmenityChip
+          label={onlyHalal ? `✓ Halal Only (${totalHalalInUk})` : `All Stores (${stores.length})`}
+          active={onlyHalal}
+          onPress={() => setOnlyHalal(!onlyHalal)}
+        />
+        <AmenityChip
+          label="Outdoor Seating"
+          active={onlyOutdoor}
+          onPress={() => setOnlyOutdoor(!onlyOutdoor)}
+        />
+      </View>
+
+      {/* Results Bar */}
+      <View style={styles.resultsBar}>
+        <Text style={styles.resultsCount}>
+          {isLoading
+            ? 'Loading store data...'
+            : `Showing ${filteredStores.length} ${onlyHalal ? 'Halal' : ''} restaurants`}
+        </Text>
+      </View>
+
+      {/* Store List */}
+      <FlatList
+        data={filteredStores}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <RestaurantCard
+            name={item.name}
+            street={item.street}
+            city={item.city}
+            postalCode={item.postalCode}
+            distanceMiles={item.distanceMiles}
+            isHalal={item.isHalal}
+            amenitiesList={item.amenitiesList}
+            status={item.status}
+            onPress={() => handleOpenDirections(item)}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
+        initialNumToRender={10}
+        maxToRenderPerBatch={20}
+        windowSize={10}
+      />
+    </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrandThemeProvider theme={NANDOS_THEME}>
+        <NandosStoreFinderScreen />
+      </BrandThemeProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -226,4 +196,3 @@ const styles = StyleSheet.create({
     paddingBottom: 24
   }
 });
-

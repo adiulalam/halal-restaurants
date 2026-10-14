@@ -7,175 +7,139 @@ import {
   TextInput,
   StyleSheet,
   StatusBar,
-  Linking,
-  TouchableOpacity
+  Linking
 } from 'react-native';
-import { BrandThemeProvider, KFC_THEME, RestaurantCard, AmenityChip } from '@halal-restaurants/ui';
+import { QueryClientProvider } from '@tanstack/react-query';
+import {
+  BrandThemeProvider,
+  KFC_THEME,
+  RestaurantCard,
+  AmenityChip,
+  createAppQueryClient,
+  useRestaurants
+} from '@halal-restaurants/ui';
+import kfcOfflineData from './assets/kfc-offline-data.json';
 
-// In production, this data loads from the API service.
-// For initial offline preview, we embed the verified seed data.
-const SAMPLE_KFC_STORES = [
-  {
-    storeId: '08921',
-    name: 'Bethnal Green',
-    street: '406 Bethnal Green Road',
-    city: 'London',
-    postalCode: 'E2 0DJ',
-    isHalal: true,
-    hasDriveThru: false,
-    hasWifi: true,
-    hasDisabilityAccess: true,
-    distanceMiles: 0.4,
-    facilities: ['100% Halal Certified', 'Free Wifi', 'Disability Access', 'Express', 'Rewards Arcade'],
-    status: 'open'
-  },
-  {
-    storeId: '12107',
-    name: 'Welling - Bellegrove Road',
-    street: '31 Bellegrove Road',
-    city: 'Welling',
-    postalCode: 'DA16 3PB',
-    isHalal: false,
-    hasDriveThru: false,
-    hasWifi: true,
-    hasDisabilityAccess: true,
-    distanceMiles: 2.1,
-    facilities: ['Free Wifi', 'Disability Access', 'Rewards Arcade', 'Baby Changing Room'],
-    status: 'open'
-  },
-  {
-    storeId: '02609',
-    name: 'Huntingdon - Tower Field',
-    street: 'KFC Towerfields, St Peters Road',
-    city: 'Huntingdon',
-    postalCode: 'PE29 7EG',
-    isHalal: false,
-    hasDriveThru: true,
-    hasWifi: true,
-    hasDisabilityAccess: true,
-    distanceMiles: 14.5,
-    facilities: ['Drive Thru', 'Free Wifi', 'Disability Access', 'Baby Changing Room'],
-    status: 'open'
-  },
-  {
-    storeId: '05432',
-    name: 'Whitechapel - Mile End Road',
-    street: '124 Mile End Road',
-    city: 'London',
-    postalCode: 'E1 4UN',
-    isHalal: true,
-    hasDriveThru: false,
-    hasWifi: true,
-    hasDisabilityAccess: true,
-    distanceMiles: 0.9,
-    facilities: ['100% Halal Certified', 'Free Wifi', 'Disability Access', 'Mobile Ordering'],
-    status: 'open'
-  },
-  {
-    storeId: '08716',
-    name: 'Leigh - Parsonage Retail Park',
-    street: 'Parsonage Retail Park, Atherleigh Way',
-    city: 'Leigh',
-    postalCode: 'WN7 5SJ',
-    isHalal: false,
-    hasDriveThru: true,
-    hasWifi: true,
-    hasDisabilityAccess: true,
-    distanceMiles: 18.2,
-    facilities: ['Drive Thru', 'Free Wifi', 'Disability Access', 'Rewards Arcade'],
-    status: 'open'
-  }
-];
+const queryClient = createAppQueryClient();
 
-export default function App() {
+function KfcStoreFinderScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [onlyHalal, setOnlyHalal] = useState(true);
   const [onlyDriveThru, setOnlyDriveThru] = useState(false);
 
+  // TanStack Query: loads bundled offline JSON on first open or offline, and syncs when online
+  const { data: stores = [], isLoading } = useRestaurants({
+    queryKey: ['kfc-restaurants'],
+    offlineData: kfcOfflineData
+  });
+
   const filteredStores = useMemo(() => {
-    return SAMPLE_KFC_STORES.filter((store) => {
+    return stores.filter((store) => {
       if (onlyHalal && !store.isHalal) return false;
-      if (onlyDriveThru && !store.hasDriveThru) return false;
+      if (onlyDriveThru) {
+        const hasDriveThru = (store.amenitiesList || []).some((a) =>
+          a.toLowerCase().includes('drive')
+        );
+        if (!hasDriveThru) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName = store.name.toLowerCase().includes(q);
-        const matchesCity = store.city.toLowerCase().includes(q);
-        const matchesPostcode = store.postalCode.toLowerCase().includes(q);
+        const matchesCity = store.city ? store.city.toLowerCase().includes(q) : false;
+        const matchesPostcode = store.postalCode ? store.postalCode.toLowerCase().includes(q) : false;
         if (!matchesName && !matchesCity && !matchesPostcode) return false;
       }
       return true;
     });
-  }, [searchQuery, onlyHalal, onlyDriveThru]);
+  }, [stores, searchQuery, onlyHalal, onlyDriveThru]);
 
   const handleOpenDirections = (store: any) => {
-    const query = encodeURIComponent(`${store.name}, ${store.street}, ${store.postalCode}`);
+    const addressPart = [store.name, store.street, store.postalCode].filter(Boolean).join(', ');
+    const query = encodeURIComponent(`KFC, ${addressPart}`);
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
   };
 
+  const totalHalalInUk = useMemo(() => stores.filter((s) => s.isHalal).length, [stores]);
+
   return (
-    <BrandThemeProvider theme={KFC_THEME}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#E4002B" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#E4002B" />
 
-        {/* Brand Header */}
-        <View style={styles.header}>
-          <Text style={styles.brandTitle}>HALAL KFC UK</Text>
-          <Text style={styles.brandSubtitle}>Find 100% Halal Certified KFCs Across the UK</Text>
-        </View>
+      {/* Brand Header */}
+      <View style={styles.header}>
+        <Text style={styles.brandTitle}>HALAL KFC UK</Text>
+        <Text style={styles.brandSubtitle}>
+          Offline-Ready • TanStack Query • {totalHalalInUk} Halal Verified
+        </Text>
+      </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            placeholder="Search town, postcode or branch..."
-            placeholderTextColor="#888"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-
-        {/* Filter Chips */}
-        <View style={styles.filterRow}>
-          <AmenityChip
-            label={onlyHalal ? '✓ Halal Only (225 in UK)' : 'All Stores (1,061)'}
-            active={onlyHalal}
-            onPress={() => setOnlyHalal(!onlyHalal)}
-          />
-          <AmenityChip
-            label="Drive-Thru"
-            active={onlyDriveThru}
-            onPress={() => setOnlyDriveThru(!onlyDriveThru)}
-          />
-        </View>
-
-        {/* Results Counter */}
-        <View style={styles.resultsBar}>
-          <Text style={styles.resultsCount}>
-            Showing {filteredStores.length} {onlyHalal ? 'Halal' : ''} KFC restaurants
-          </Text>
-        </View>
-
-        {/* Store List */}
-        <FlatList
-          data={filteredStores}
-          keyExtractor={(item) => item.storeId}
-          renderItem={({ item }) => (
-            <RestaurantCard
-              name={item.name}
-              street={item.street}
-              city={item.city}
-              postalCode={item.postalCode}
-              distanceMiles={item.distanceMiles}
-              isHalal={item.isHalal}
-              amenitiesList={item.facilities}
-              status={item.status}
-              onPress={() => handleOpenDirections(item)}
-            />
-          )}
-          contentContainerStyle={styles.listContent}
+      {/* Search Input */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Search town, postcode or branch (e.g. Bethnal Green, E2 0DJ)..."
+          placeholderTextColor="#888"
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
-      </SafeAreaView>
-    </BrandThemeProvider>
+      </View>
+
+      {/* Filter Chips */}
+      <View style={styles.filterRow}>
+        <AmenityChip
+          label={onlyHalal ? `✓ Halal Only (${totalHalalInUk})` : `All Stores (${stores.length})`}
+          active={onlyHalal}
+          onPress={() => setOnlyHalal(!onlyHalal)}
+        />
+        <AmenityChip
+          label="Drive-Thru"
+          active={onlyDriveThru}
+          onPress={() => setOnlyDriveThru(!onlyDriveThru)}
+        />
+      </View>
+
+      {/* Results Bar */}
+      <View style={styles.resultsBar}>
+        <Text style={styles.resultsCount}>
+          {isLoading
+            ? 'Loading store data...'
+            : `Showing ${filteredStores.length} ${onlyHalal ? 'Halal' : ''} restaurants`}
+        </Text>
+      </View>
+
+      {/* Store List */}
+      <FlatList
+        data={filteredStores}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <RestaurantCard
+            name={item.name}
+            street={item.street}
+            city={item.city}
+            postalCode={item.postalCode}
+            distanceMiles={item.distanceMiles}
+            isHalal={item.isHalal}
+            amenitiesList={item.amenitiesList}
+            status={item.status}
+            onPress={() => handleOpenDirections(item)}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
+        initialNumToRender={10}
+        maxToRenderPerBatch={20}
+        windowSize={10}
+      />
+    </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrandThemeProvider theme={KFC_THEME}>
+        <KfcStoreFinderScreen />
+      </BrandThemeProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -234,4 +198,3 @@ const styles = StyleSheet.create({
     paddingBottom: 24
   }
 });
-

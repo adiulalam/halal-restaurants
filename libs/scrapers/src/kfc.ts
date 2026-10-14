@@ -1,4 +1,4 @@
-import type { KfcRestaurantInput } from '@halal-restaurants/types';
+import { KfcRestaurantInputSchema, type KfcRestaurantInput } from '@halal-restaurants/types';
 
 export const KFC_API_URL = 'https://www.kfc.co.uk/api/cms/api/data/restaurants_all?countrycode=GB';
 
@@ -19,38 +19,48 @@ export async function scrapeKfcUk(): Promise<KfcRestaurantInput[]> {
   }
 
   const raw = await res.json();
+  const validatedList: KfcRestaurantInput[] = [];
 
-  return raw.map((r: any) => {
+  for (const r of raw) {
     const facilities = (r.facilities || []).map((f: any) => f.name);
     const isHalal = facilities.some((name: string) => name.toLowerCase().includes('halal'));
 
-    return {
-      storeId: r.storeid || r.refid,
-      refId: r.refid,
-      name: r.name,
-      street: r.street,
-      city: r.city,
-      postalCode: r.postalcode,
+    const candidate = {
+      storeId: String(r.storeid || r.refid || '').trim(),
+      refId: r.refid ? String(r.refid) : null,
+      name: r.name ? String(r.name).trim() : 'Unknown KFC',
+      street: r.street ? String(r.street).trim() : null,
+      city: r.city ? String(r.city).trim() : null,
+      postalCode: r.postalcode ? String(r.postalcode).trim() : null,
       country: r.countryCode || 'GB',
-      latitude: r.geolocation?.latitude,
-      longitude: r.geolocation?.longitude,
-      region: r.region,
+      latitude: r.geolocation?.latitude ?? null,
+      longitude: r.geolocation?.longitude ?? null,
+      region: r.region ? String(r.region).trim() : null,
       isHalal,
       hasDriveThru: facilities.some((name: string) => name.toLowerCase().includes('drive')),
       hasWifi: facilities.some((name: string) => name.toLowerCase().includes('wifi')),
       hasDisabilityAccess: facilities.some((name: string) => name.toLowerCase().includes('disability')),
       hasBabyChanging: facilities.some((name: string) => name.toLowerCase().includes('baby')),
       isVeganFriendly: facilities.some((name: string) => name.toLowerCase().includes('vegan')),
-      judoPayId: r.judopayid,
-      status: r.status,
-      bagTaxType: r.bagtaxtype,
-      defaultEtaMin: r.defaultEtaMin,
-      defaultEtaMax: r.defaultEtaMax,
+      judoPayId: r.judopayid ? String(r.judopayid) : null,
+      status: r.status ? String(r.status) : null,
+      bagTaxType: r.bagtaxtype ? String(r.bagtaxtype) : null,
+      defaultEtaMin: typeof r.defaultEtaMin === 'number' ? r.defaultEtaMin : null,
+      defaultEtaMax: typeof r.defaultEtaMax === 'number' ? r.defaultEtaMax : null,
       facilitiesJson: JSON.stringify(r.facilities || []),
       orderModesJson: JSON.stringify(r.orderModes || []),
       openingHoursJson: JSON.stringify(r.hours || []),
       detailUrl: r.link ? `https://www.kfc.co.uk${r.link}` : null
     };
-  });
-}
 
+    // Zod validation check
+    const parseResult = KfcRestaurantInputSchema.safeParse(candidate);
+    if (parseResult.success) {
+      validatedList.push(parseResult.data);
+    } else {
+      console.warn(`[KFC Scraper] Validation skipped invalid record storeId=${candidate.storeId}:`, parseResult.error.format());
+    }
+  }
+
+  return validatedList;
+}

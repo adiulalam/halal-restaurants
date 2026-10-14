@@ -1,3 +1,5 @@
+export * from './schemas';
+
 export type RestaurantChain = 'KFC' | 'NANDOS';
 
 export interface GeoLocation {
@@ -8,7 +10,7 @@ export interface GeoLocation {
 export interface UnifiedRestaurant {
   id: string;
   chain: RestaurantChain;
-  chainId: string; // storeId for KFC, branchCode for Nando's
+  chainId: string;
   name: string;
   street?: string | null;
   city?: string | null;
@@ -38,66 +40,9 @@ export interface UnifiedRestaurant {
   updatedAt?: Date;
 }
 
-export interface KfcRestaurantInput {
-  storeId: string;
-  refId?: string | null;
-  name: string;
-  street?: string | null;
-  city?: string | null;
-  postalCode?: string | null;
-  country?: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  region?: string | null;
-  isHalal: boolean;
-  hasDriveThru: boolean;
-  hasWifi: boolean;
-  hasDisabilityAccess: boolean;
-  hasBabyChanging: boolean;
-  isVeganFriendly: boolean;
-  judoPayId?: string | null;
-  status?: string | null;
-  bagTaxType?: string | null;
-  defaultEtaMin?: number | null;
-  defaultEtaMax?: number | null;
-  facilitiesJson?: string | null;
-  orderModesJson?: string | null;
-  openingHoursJson?: string | null;
-  detailUrl?: string | null;
-}
-
-export interface NandosRestaurantInput {
-  branchCode: string;
-  name: string;
-  slug?: string | null;
-  seoSlug?: string | null;
-  street?: string | null;
-  city?: string | null;
-  postalCode?: string | null;
-  country?: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  region?: string | null;
-  telephone?: string | null;
-  isHalal: boolean;
-  hasOutdoorSeating: boolean;
-  hasBabyChanging: boolean;
-  hasDisabledAccess: boolean;
-  hasWifi: boolean;
-  hasDelivery: boolean;
-  hasCollection: boolean;
-  status?: string | null;
-  mapCID?: string | null;
-  amenitiesJson?: string | null;
-  orderChannelsJson?: string | null;
-  openingHoursJson?: string | null;
-  detailUrl?: string | null;
-}
-
 export interface ScrapeSummary {
   chain: RestaurantChain;
   totalFound: number;
   halalFound: number;
   durationMs: number;
 }
-
