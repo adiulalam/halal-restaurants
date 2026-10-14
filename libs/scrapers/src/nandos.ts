@@ -115,3 +115,58 @@ export async function scrapeNandosUk(): Promise<NandosRestaurantInput[]> {
 
   return Array.from(uniqueMap.values());
 }
+
+export function formatNandosToMobileItem(branch: NandosRestaurantInput): import('@halal-restaurants/types').MobileRestaurantItem {
+  const list: string[] = [];
+  if (branch.isHalal) list.push('Halal Certified');
+  if (branch.hasOutdoorSeating) list.push('Outdoor Seating');
+  if (branch.hasDisabledAccess) list.push('Disabled Access');
+  if (branch.hasBabyChanging) list.push('Baby Changing');
+  if (branch.hasWifi) list.push('Wifi');
+  if (branch.hasDelivery) list.push('Delivery');
+  if (branch.hasCollection) list.push('Collection');
+
+  if (branch.amenitiesJson) {
+    try {
+      const parsed = JSON.parse(branch.amenitiesJson);
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          const str = typeof item === 'string' ? item : item?.name;
+          if (str && !str.includes('HALAL')) {
+            const formatted = str
+              .toLowerCase()
+              .split('_')
+              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ');
+            if (!list.includes(formatted)) {
+              list.push(formatted);
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  return {
+    id: `nandos-${branch.branchCode}`,
+    name: branch.name,
+    street: branch.street,
+    city: branch.city,
+    postalCode: branch.postalCode,
+    latitude: branch.latitude,
+    longitude: branch.longitude,
+    distanceMiles: null,
+    isHalal: branch.isHalal,
+    amenitiesList: list,
+    status: branch.status,
+    detailUrl: branch.detailUrl,
+    telephone: branch.telephone
+  };
+}
+
+export async function fetchNandosMobileRestaurants(): Promise<import('@halal-restaurants/types').MobileRestaurantItem[]> {
+  const branches = await scrapeNandosUk();
+  return branches.map(formatNandosToMobileItem);
+}

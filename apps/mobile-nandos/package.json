@@ -10,6 +10,7 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
+    "@halal-restaurants/scrapers": "*",
     "@halal-restaurants/types": "*",
     "@halal-restaurants/ui": "*",
     "expo": "~52.0.0",

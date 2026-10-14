@@ -20,6 +20,7 @@ import {
   createAppQueryClient,
   useRestaurants
 } from '@halal-restaurants/ui';
+import { fetchKfcMobileRestaurants } from '@halal-restaurants/scrapers';
 import type { MobileRestaurantItem } from '@halal-restaurants/types';
 import kfcOfflineData from './assets/kfc-offline-data.json';
 
@@ -30,10 +31,11 @@ function KfcStoreFinderScreen() {
   const [onlyHalal, setOnlyHalal] = useState(true);
   const [onlyDriveThru, setOnlyDriveThru] = useState(false);
 
-  // TanStack Query: instant load from pre-bundled offline JSON, background sync when online
-  const { data: stores = [], isLoading } = useRestaurants({
+  // TanStack Query: instant load from pre-bundled offline JSON, background live fetch directly from KFC
+  const { data: stores = [], isLoading, isFetching, refetch } = useRestaurants({
     queryKey: ['kfc-restaurants'],
-    offlineData: kfcOfflineData
+    offlineData: kfcOfflineData,
+    fetcher: fetchKfcMobileRestaurants
   });
 
   // Fast pre-indexed search
@@ -93,7 +95,7 @@ function KfcStoreFinderScreen() {
         <View style={styles.header}>
           <Text style={styles.brandTitle}>HALAL KFC UK</Text>
           <Text style={styles.brandSubtitle}>
-            Web & Mobile Ready • TanStack Query • {totalHalal} Verified Halal
+            {isFetching ? '⚡ Fetching latest stores from KFC...' : `Offline-Ready • ${totalHalal} Verified Halal`}
           </Text>
         </View>
 
@@ -145,6 +147,8 @@ function KfcStoreFinderScreen() {
             maxToRenderPerBatch={16}
             windowSize={7}
             removeClippedSubviews={Platform.OS !== 'web'}
+            refreshing={isFetching}
+            onRefresh={refetch}
           />
         )}
       </View>

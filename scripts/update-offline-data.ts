@@ -1,0 +1,41 @@
+import fs from 'fs';
+import path from 'path';
+import { fetchKfcMobileRestaurants, fetchNandosMobileRestaurants } from '../libs/scrapers/src/index';
+import { MobileRestaurantListSchema } from '../libs/types/src/index';
+
+async function updateOfflineData() {
+  console.log('====================================================');
+  console.log(' Syncing Fresh UK Store Data for Bundled Datasets');
+  console.log('====================================================\n');
+
+  // 1. KFC UK
+  console.log('[KFC UK] Fetching fresh store data from live endpoint...');
+  const kfcItems = await fetchKfcMobileRestaurants();
+  const validatedKfc = MobileRestaurantListSchema.parse(kfcItems);
+  const kfcHalal = validatedKfc.filter((s) => s.isHalal).length;
+
+  const kfcPath = path.resolve(__dirname, '../apps/mobile-kfc/assets/kfc-offline-data.json');
+  fs.writeFileSync(kfcPath, JSON.stringify(validatedKfc, null, 2), 'utf-8');
+  console.log(`[KFC UK] Successfully saved ${validatedKfc.length} stores (${kfcHalal} Halal) to:`);
+  console.log(`         ${kfcPath}\n`);
+
+  // 2. Nando's UK
+  console.log('[Nando\'s UK] Fetching fresh store data from live stream...');
+  const nandosItems = await fetchNandosMobileRestaurants();
+  const validatedNandos = MobileRestaurantListSchema.parse(nandosItems);
+  const nandosHalal = validatedNandos.filter((s) => s.isHalal).length;
+
+  const nandosPath = path.resolve(__dirname, '../apps/mobile-nandos/assets/nandos-offline-data.json');
+  fs.writeFileSync(nandosPath, JSON.stringify(validatedNandos, null, 2), 'utf-8');
+  console.log(`[Nando's UK] Successfully saved ${validatedNandos.length} stores (${nandosHalal} Halal) to:`);
+  console.log(`             ${nandosPath}\n`);
+
+  console.log('====================================================');
+  console.log(' Offline Datasets 100% Up-To-Date & Validated!');
+  console.log('====================================================');
+}
+
+updateOfflineData().catch((err) => {
+  console.error('[Error Updating Offline Data]:', err);
+  process.exit(1);
+});

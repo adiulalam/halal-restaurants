@@ -64,3 +64,47 @@ export async function scrapeKfcUk(): Promise<KfcRestaurantInput[]> {
 
   return validatedList;
 }
+
+export function formatKfcToMobileItem(item: KfcRestaurantInput): import('@halal-restaurants/types').MobileRestaurantItem {
+  const amenitiesList: string[] = [];
+  if (item.isHalal) amenitiesList.push('100% Halal Certified');
+  if (item.hasDriveThru) amenitiesList.push('Drive Thru');
+  if (item.hasWifi) amenitiesList.push('Free Wifi');
+  if (item.hasDisabilityAccess) amenitiesList.push('Disability Access');
+  if (item.hasBabyChanging) amenitiesList.push('Baby Changing');
+  if (item.isVeganFriendly) amenitiesList.push('Vegan Friendly');
+
+  if (item.facilitiesJson) {
+    try {
+      const parsed = JSON.parse(item.facilitiesJson);
+      for (const f of parsed) {
+        const name = typeof f === 'string' ? f : f?.name;
+        if (name && !amenitiesList.includes(name) && !name.toLowerCase().includes('halal')) {
+          amenitiesList.push(name);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  return {
+    id: `kfc-${item.storeId}`,
+    name: item.name,
+    street: item.street,
+    city: item.city,
+    postalCode: item.postalCode,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    distanceMiles: null,
+    isHalal: item.isHalal,
+    amenitiesList,
+    status: item.status,
+    detailUrl: item.detailUrl
+  };
+}
+
+export async function fetchKfcMobileRestaurants(): Promise<import('@halal-restaurants/types').MobileRestaurantItem[]> {
+  const list = await scrapeKfcUk();
+  return list.map(formatKfcToMobileItem);
+}

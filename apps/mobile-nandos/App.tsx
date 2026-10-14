@@ -20,6 +20,7 @@ import {
   createAppQueryClient,
   useRestaurants
 } from '@halal-restaurants/ui';
+import { fetchNandosMobileRestaurants } from '@halal-restaurants/scrapers';
 import type { MobileRestaurantItem } from '@halal-restaurants/types';
 import nandosOfflineData from './assets/nandos-offline-data.json';
 
@@ -30,10 +31,11 @@ function NandosStoreFinderScreen() {
   const [onlyHalal, setOnlyHalal] = useState(true);
   const [onlyOutdoor, setOnlyOutdoor] = useState(false);
 
-  // TanStack Query: instant load from pre-bundled offline JSON, background sync when online
-  const { data: stores = [], isLoading } = useRestaurants({
+  // TanStack Query: instant load from pre-bundled offline JSON, background live fetch directly from Nando's
+  const { data: stores = [], isLoading, isFetching, refetch } = useRestaurants({
     queryKey: ['nandos-restaurants'],
-    offlineData: nandosOfflineData
+    offlineData: nandosOfflineData,
+    fetcher: fetchNandosMobileRestaurants
   });
 
   // Fast pre-indexed search
@@ -93,7 +95,7 @@ function NandosStoreFinderScreen() {
         <View style={styles.header}>
           <Text style={styles.brandTitle}>HALAL NANDO'S UK</Text>
           <Text style={styles.brandSubtitle}>
-            Web & Mobile Ready • TanStack Query • {totalHalal} Verified Halal
+            {isFetching ? '⚡ Fetching latest stores from Nando\'s...' : `Offline-Ready • ${totalHalal} Verified Halal`}
           </Text>
         </View>
 
@@ -145,6 +147,8 @@ function NandosStoreFinderScreen() {
             maxToRenderPerBatch={16}
             windowSize={7}
             removeClippedSubviews={Platform.OS !== 'web'}
+            refreshing={isFetching}
+            onRefresh={refetch}
           />
         )}
       </View>

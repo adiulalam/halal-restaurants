@@ -14,6 +14,7 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "lib": ["es2022", "dom"],
+    "types": ["node"],
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -25,9 +26,7 @@
     "baseUrl": ".",
     "paths": {
       "@halal-restaurants/types": ["libs/types/src/index.ts"],
-      "@halal-restaurants/database": ["libs/database/src/index.ts"],
       "@halal-restaurants/scrapers": ["libs/scrapers/src/index.ts"],
-      "@halal-restaurants/jobs": ["libs/jobs/src/index.ts"],
       "@halal-restaurants/ui": ["libs/ui/src/index.ts"]
     }
   },
