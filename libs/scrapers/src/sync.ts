@@ -1,6 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { fetchKfcMobileRestaurants, fetchNandosMobileRestaurants } from '@halal-restaurants/scrapers';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import process from 'node:process';
+import { fetchKfcMobileRestaurants, fetchNandosMobileRestaurants } from './index';
 import { MobileRestaurantListSchema } from '@halal-restaurants/types';
 
 export async function updateOfflineData(): Promise<void> {

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {},
+  "include": [
+    "apps/**/*",
+    "libs/**/*",
+    "e2e/**/*",
+    "playwright.config.ts"
+  ]
+}
+

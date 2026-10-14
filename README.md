@@ -26,12 +26,12 @@ halal-restaurants/
 │
 ├── libs/
 │   ├── ui/                       # Shared UI library (HalalBadge, AmenityChip, RestaurantCard, Theme tokens)
-│   ├── scrapers/                 # Direct client fetchers & parsers for KFC and Nando's
-│   ├── types/                    # Shared TypeScript interfaces & Zod validation schemas
-│   └── data/                     # Raw sample datasets, fixtures, and data synchronization utilities
+│   ├── scrapers/                 # Direct client fetchers, parsers, offline data sync & sample fixtures
+│   └── types/                    # Shared TypeScript interfaces & Zod validation schemas
 │
 ├── package.json                  # Clean, lightweight scripts
-└── tsconfig.base.json            # Strict TypeScript configuration
+├── tsconfig.json                 # Root TypeScript project config
+└── tsconfig.base.json            # Base compiler configuration & path mappings
 ```
 
 ---
