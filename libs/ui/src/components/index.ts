@@ -14,4 +14,5 @@ export * from './HalalBadge';
 export * from './AmenityChip';
 export * from './RestaurantCard';
 export * from './RestaurantMapView';
+export * from './Drawer';
 

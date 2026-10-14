@@ -103,5 +103,47 @@ test.describe('KFC App E2E & WCAG AA Accessibility', () => {
 
     expect(results.violations).toEqual([]);
   });
+
+  test('opens and navigates mobile drawer on mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 851 });
+    await page.goto('http://localhost:8081/');
+    await page.waitForSelector('text=HALAL KFC UK');
+
+    // Drawer button should be visible on mobile
+    const drawerBtn = page.getByRole('button', { name: /Open navigation drawer/i });
+    await expect(drawerBtn).toBeVisible();
+
+    // Amenities filter and results counter remain on the page as requested
+    await expect(page.locator('text=/Halal Only \\(\\d+\\)/')).toBeVisible();
+    await expect(page.getByText(/Showing \d+.*restaurants/)).toBeVisible();
+
+    // Open navigation drawer
+    await drawerBtn.click();
+    await expect(page.getByRole('button', { name: 'Close navigation drawer', exact: true })).toBeVisible();
+
+    // Search input and view switcher are inside the drawer
+    await expect(page.getByPlaceholder('Search town, postcode or branch...')).toBeVisible();
+    await expect(page.locator('text=🗺️ Map View')).toBeVisible();
+
+    // Close drawer with Done button
+    await page.getByRole('button', { name: /Done/i }).click();
+    await expect(drawerBtn).toBeVisible();
+  });
+
+  test('passes WCAG AA accessibility audit on mobile with open drawer', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 851 });
+    await page.goto('http://localhost:8081/');
+    await page.waitForSelector('text=HALAL KFC UK');
+
+    // Open drawer
+    await page.getByRole('button', { name: /Open navigation drawer/i }).click();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa'])
+      .exclude('iframe')
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
 });
 

@@ -69,18 +69,18 @@ export const Chip: React.FC<ChipProps> = React.memo(function Chip({
 
 const styles = StyleSheet.create({
   chipBase: {
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 14,
     borderWidth: 1,
     marginRight: 6,
-    marginBottom: 6,
+    marginVertical: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500'
   },
   activeChipText: {

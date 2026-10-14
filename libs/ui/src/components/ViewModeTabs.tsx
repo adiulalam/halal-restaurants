@@ -86,17 +86,17 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 13,
+    paddingVertical: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottomWidth: 3,
+    borderBottomWidth: 2,
     borderBottomColor: 'transparent'
   },
   activeTabButton: {
-    borderBottomWidth: 3
+    borderBottomWidth: 2
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600'
   },
   activeTabText: {

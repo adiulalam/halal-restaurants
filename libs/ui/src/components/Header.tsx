@@ -52,9 +52,9 @@ export const Header: React.FC<HeaderProps> = React.memo(function Header({
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: Platform.OS === 'ios' ? 12 : 16,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 8 : 10,
+    paddingBottom: 8,
+    paddingHorizontal: 14,
     borderBottomWidth: 1
   },
   titleRow: {
@@ -69,24 +69,24 @@ const styles = StyleSheet.create({
     flexShrink: 1
   },
   title: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 17,
+    fontWeight: '800',
     letterSpacing: 0.5
   },
   badge: {
     backgroundColor: '#15803D',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
     borderRadius: 4
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800'
   },
   subtitle: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 11,
+    marginTop: 2,
     fontWeight: '500'
   },
   rightAction: {

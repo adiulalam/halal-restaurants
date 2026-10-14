@@ -36,10 +36,10 @@ export const Card: React.FC<CardProps> = React.memo(function Card({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 6,
-    marginHorizontal: 16,
+    borderRadius: 10,
+    padding: 12,
+    marginVertical: 4,
+    marginHorizontal: 12,
     borderWidth: 1
   },
   elevated: {

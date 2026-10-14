@@ -9,7 +9,8 @@ import {
   StatusBar,
   Linking,
   ActivityIndicator,
-  Platform
+  Platform,
+  useWindowDimensions
 } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -23,6 +24,7 @@ import {
   ViewModeTabs,
   RestaurantMapView,
   ThemeToggleButton,
+  Drawer,
   requestUserLocation,
   calculateDistanceMiles,
   createAppQueryClient,
@@ -39,6 +41,9 @@ const queryClient = createAppQueryClient();
 
 function NandosStoreFinderScreen() {
   const theme = useBrandTheme();
+  const { width } = useWindowDimensions();
+  const isMobile = Platform.OS !== 'web' || width < 768;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   // Requirement: Halal only is NOT pre-selected by default, but is the first amenity filter
   const [onlyHalal, setOnlyHalal] = useState(false);
@@ -182,27 +187,48 @@ function NandosStoreFinderScreen() {
 
       {/* Main Responsive Container */}
       <View style={[styles.appContainer, { backgroundColor: theme.backgroundColor }]}>
-        {/* Brand Header with Dark Mode Toggle */}
-        <Header
-          title="HALAL NANDO'S UK"
-          subtitle={isFetching ? "⚡ Fetching latest stores from Nando's..." : `Offline-Ready • ${totalHalal} Verified Halal`}
-          badge="HMC"
-          rightAction={<ThemeToggleButton />}
-        />
+        {isMobile ? (
+          <Drawer
+            title="HALAL NANDO'S UK"
+            subtitle={isFetching ? "⚡ Fetching latest stores from Nando's..." : `Offline-Ready • ${totalHalal} Verified Halal`}
+            badge="HMC"
+            isOpen={isMenuOpen}
+            onOpen={() => setIsMenuOpen(true)}
+            onClose={() => setIsMenuOpen(false)}
+            viewMode={viewMode}
+            onViewModeChange={(tab) => {
+              handleTabChange(tab);
+              setIsMenuOpen(false);
+            }}
+            listCount={filteredStores.length}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+        ) : (
+          <>
+            {/* Desktop Brand Header with Dark Mode Toggle */}
+            <Header
+              title="HALAL NANDO'S UK"
+              subtitle={isFetching ? "⚡ Fetching latest stores from Nando's..." : `Offline-Ready • ${totalHalal} Verified Halal`}
+              badge="HMC"
+              rightAction={<ThemeToggleButton />}
+            />
 
-        {/* View Mode Tabs: List View & Map View */}
-        <ViewModeTabs
-          activeTab={viewMode}
-          onTabChange={handleTabChange}
-          listCount={filteredStores.length}
-        />
+            {/* Desktop View Mode Tabs: List View & Map View */}
+            <ViewModeTabs
+              activeTab={viewMode}
+              onTabChange={handleTabChange}
+              listCount={filteredStores.length}
+            />
 
-        {/* Search Input */}
-        <SearchInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search town, postcode or branch (e.g. Baker Street, W1U 6RS)..."
-        />
+            {/* Desktop Search Input */}
+            <SearchInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search town, postcode or branch (e.g. Baker Street, W1U 6RS)..."
+            />
+          </>
+        )}
 
         {/* Dynamic Amenities Filter Row: Halal is first, followed by all amenities */}
         <View
@@ -380,19 +406,20 @@ const styles = StyleSheet.create({
   },
   filterScroll: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5
   },
   resultsBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
   resultsCount: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
     flex: 1
   },

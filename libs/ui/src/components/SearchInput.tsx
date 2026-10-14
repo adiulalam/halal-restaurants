@@ -84,8 +84,8 @@ export const SearchInput: React.FC<SearchInputProps> = React.memo(function Searc
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderBottomWidth: 1
   },
   inputWrapper: {
@@ -93,16 +93,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10
+    paddingHorizontal: 8
   },
   searchIcon: {
-    fontSize: 14,
-    marginRight: 8
+    fontSize: 13,
+    marginRight: 6
   },
   input: {
     flex: 1,
-    height: 42,
-    fontSize: 14,
+    height: 34,
+    fontSize: 13,
+    paddingVertical: 0,
     ...Platform.select({
       web: {
         outlineStyle: 'none'
@@ -110,10 +111,10 @@ const styles = StyleSheet.create({
     })
   },
   clearButton: {
-    padding: 6
+    padding: 4
   },
   clearIcon: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700'
   }
 });

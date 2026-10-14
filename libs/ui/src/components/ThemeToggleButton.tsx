@@ -29,14 +29,14 @@ export function ThemeToggleButton(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   themeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
     borderWidth: 1
   },
   themeButtonText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700'
   }
 });

@@ -94,7 +94,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = React.memo(
               title="Open in Maps"
               icon="📍"
               variant="outline"
-              size="md"
+              size="sm"
               onPress={onOpenMap}
               accessibilityLabel={`Open directions to ${name} in maps`}
             />
@@ -116,40 +116,44 @@ const styles = StyleSheet.create({
     marginRight: 8
   },
   addressText: {
-    marginTop: 4
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 16
   },
   distanceContainer: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2
   },
   distanceText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700'
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 8
+    marginTop: 5,
+    marginBottom: 5
   },
   statusBadge: {
-    marginLeft: 8
+    marginLeft: 6
   },
   amenitiesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: 6
+    marginTop: 3
   },
   moreButton: {
     marginRight: 6,
-    marginBottom: 6
+    marginVertical: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3
   },
   cardFooter: {
-    marginTop: 12,
-    paddingTop: 10,
+    marginTop: 8,
+    paddingTop: 6,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'flex-end'
