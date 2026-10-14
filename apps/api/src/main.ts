@@ -1,5 +1,9 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { createBullBoard } from '@bull-board/api';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { FastifyAdapter } from '@bull-board/fastify';
+import { getRestaurantSyncQueue } from '@halal-restaurants/jobs';
 import { healthRoutes } from './routes/health';
 import { statsRoutes } from './routes/stats';
 import { restaurantRoutes } from './routes/restaurants';
@@ -16,6 +20,24 @@ async function bootstrap() {
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
   });
+
+  // Bull-Board Web Dashboard (Sidekiq Web UI equivalent)
+  const serverAdapter = new FastifyAdapter();
+  serverAdapter.setBasePath('/admin/queues');
+  try {
+    createBullBoard({
+      queues: [new BullMQAdapter(getRestaurantSyncQueue() as any)],
+      serverAdapter,
+      options: {
+        uiConfig: {
+          boardTitle: 'UK Halal Restaurants - Background Job Queues'
+        }
+      }
+    });
+    await app.register(serverAdapter.registerPlugin(), { prefix: '/admin/queues' });
+  } catch (err: any) {
+    app.log.warn(`[Bull-Board] Queue UI disabled: ${err.message}`);
+  }
 
   // Register Health Routes
   await app.register(healthRoutes);
@@ -38,7 +60,8 @@ async function bootstrap() {
         restaurants: '/api/v1/restaurants',
         nearby: '/api/v1/restaurants/nearby',
         kfcDetail: '/api/v1/restaurants/kfc/:id',
-        nandosDetail: '/api/v1/restaurants/nandos/:id'
+        nandosDetail: '/api/v1/restaurants/nandos/:id',
+        jobsDashboard: '/admin/queues'
       }
     };
   });
@@ -52,11 +75,12 @@ async function bootstrap() {
     console.log(` UK Halal Restaurants API is running!`);
     console.log(` Address: ${address}`);
     console.log(` Endpoints:`);
-    console.log(` - Health:    ${address}/health`);
-    console.log(` - Stats:     ${address}/api/v1/stats`);
-    console.log(` - Chains:    ${address}/api/v1/chains`);
-    console.log(` - Search:    ${address}/api/v1/restaurants?halal=true&q=London`);
-    console.log(` - Nearby:    ${address}/api/v1/restaurants/nearby?lat=51.5&lng=-0.1`);
+    console.log(` - Health:        ${address}/health`);
+    console.log(` - Stats:         ${address}/api/v1/stats`);
+    console.log(` - Chains:        ${address}/api/v1/chains`);
+    console.log(` - Search:        ${address}/api/v1/restaurants?halal=true&q=London`);
+    console.log(` - Nearby:        ${address}/api/v1/restaurants/nearby?lat=51.5&lng=-0.1`);
+    console.log(` - Job Queues UI: ${address}/admin/queues`);
     console.log('====================================================');
   } catch (err) {
     app.log.error(err);

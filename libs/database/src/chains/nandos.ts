@@ -195,3 +195,4 @@ export class NandosChainAdapter implements RestaurantChainAdapter {
 }
 
 export const nandosAdapter = new NandosChainAdapter();
+

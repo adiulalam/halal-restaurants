@@ -7,6 +7,9 @@
     "dev:api": "tsx watch apps/api/src/main.ts",
     "start:worker": "tsx apps/worker/src/main.ts",
     "dev:worker": "tsx watch apps/worker/src/main.ts",
+    "start:jobs:ui": "tsx apps/bull-board/src/main.ts",
+    "dev:jobs:ui": "tsx watch apps/bull-board/src/main.ts",
+    "start:bull-board": "tsx apps/bull-board/src/main.ts",
     "start:kfc": "npm run start -w apps/mobile-kfc",
     "start:kfc:web": "npm run web -w apps/mobile-kfc",
     "start:kfc:android": "npm run android -w apps/mobile-kfc",
@@ -48,6 +51,9 @@
     "libs/*"
   ],
   "dependencies": {
+    "@bull-board/api": "^9.10.4",
+    "@bull-board/fastify": "^9.10.4",
+    "@bull-board/ui": "^9.10.4",
     "@expo/metro-runtime": "^57.0.17",
     "@fastify/cors": "^11.3.1",
     "@libsql/client": "^0.18.0",

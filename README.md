@@ -79,6 +79,11 @@ npm run dev:api             # Run REST API with hot-reload watch
 npm run start:worker        # Run background scraping worker
 npm run dev:worker          # Run worker with hot-reload watch
 
+# Background Jobs Web View (Sidekiq Web Equivalent on Port 3000)
+npm run start:jobs:ui       # Launch Bull-Board web dashboard (http://localhost:3000)
+npm run dev:jobs:ui         # Launch Bull-Board web dashboard with hot-reload
+# Note: Also embedded directly inside the REST API at http://localhost:3001/admin/queues
+
 # Standalone Scrapers (Instant verification)
 npm run scrape:kfc          # Scrape KFC UK directly (1,061 stores, 225 Halal)
 npm run scrape:nandos       # Scrape Nando's UK directly (490 stores, 107 Halal)

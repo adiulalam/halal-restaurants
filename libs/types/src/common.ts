@@ -113,3 +113,4 @@ export type MobileRestaurantItem = z.infer<typeof MobileRestaurantItemSchema>;
 export type MobileRestaurantList = z.infer<typeof MobileRestaurantListSchema>;
 export type RestaurantQuery = z.infer<typeof RestaurantQuerySchema>;
 export type NearbyQuery = z.infer<typeof NearbyQuerySchema>;
+

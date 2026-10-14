@@ -29,3 +29,4 @@ export const NandosRestaurantInputSchema = z.object({
 });
 
 export type NandosRestaurantInput = z.infer<typeof NandosRestaurantInputSchema>;
+

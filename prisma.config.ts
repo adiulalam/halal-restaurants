@@ -8,3 +8,4 @@ export default defineConfig({
     url: env('DATABASE_URL') || `file:${path.resolve(__dirname, 'libs/database/prisma/dev.db')}`,
   },
 });
+

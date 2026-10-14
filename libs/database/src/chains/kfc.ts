@@ -181,3 +181,4 @@ export class KfcChainAdapter implements RestaurantChainAdapter {
 }
 
 export const kfcAdapter = new KfcChainAdapter();
+

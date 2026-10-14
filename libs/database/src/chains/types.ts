@@ -20,3 +20,4 @@ export interface RestaurantChainAdapter {
   getById(id: string): Promise<any | null>;
   getStats(): Promise<ChainStats>;
 }
+

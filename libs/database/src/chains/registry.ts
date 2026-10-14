@@ -32,3 +32,4 @@ export const chainRegistry = new ChainRegistry();
 export * from './types';
 export * from './kfc';
 export * from './nandos';
+

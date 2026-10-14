@@ -63,3 +63,4 @@ export const KfcRestaurantInputSchema = z.object({
 export type KfcRawFacility = z.infer<typeof KfcRawFacilitySchema>;
 export type KfcRawRestaurant = z.infer<typeof KfcRawRestaurantSchema>;
 export type KfcRestaurantInput = z.infer<typeof KfcRestaurantInputSchema>;
+

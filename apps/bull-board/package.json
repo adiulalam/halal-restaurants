@@ -1,0 +1,15 @@
+{
+  "name": "@halal-restaurants/bull-board",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts"
+  },
+  "dependencies": {
+    "@bull-board/api": "^9.10.4",
+    "@bull-board/fastify": "^9.10.4",
+    "@bull-board/ui": "^9.10.4",
+    "@halal-restaurants/jobs": "*",
+    "fastify": "^5.12.7"
+  }
+}
