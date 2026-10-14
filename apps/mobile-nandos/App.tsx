@@ -21,6 +21,7 @@ import {
   useRestaurants
 } from '@halal-restaurants/ui';
 import { fetchNandosMobileRestaurants } from '@halal-restaurants/scrapers';
+import { registerRootComponent } from 'expo';
 import type { MobileRestaurantItem } from '@halal-restaurants/types';
 import nandosOfflineData from './assets/nandos-offline-data.json';
 
@@ -165,6 +166,8 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+
+registerRootComponent(App);
 
 const styles = StyleSheet.create({
   safeArea: {
