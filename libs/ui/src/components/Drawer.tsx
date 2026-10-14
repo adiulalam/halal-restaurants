@@ -6,8 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Platform,
-  ViewStyle,
-  useWindowDimensions
+  ViewStyle
 } from 'react-native';
 import { useBrandTheme } from '../theme';
 import { ThemeToggleButton } from './ThemeToggleButton';
@@ -48,7 +47,6 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
   style
 }: DrawerProps): React.JSX.Element {
   const theme = useBrandTheme();
-  const { height: windowHeight } = useWindowDimensions();
 
   return (
     <>
@@ -110,12 +108,7 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
 
       {/* Slide-out Full Height Drawer & Dimmed Backdrop */}
       {isOpen && (
-        <View
-          style={[
-            styles.drawerOverlay,
-            Platform.OS !== 'web' && { height: windowHeight }
-          ]}
-        >
+        <View style={styles.drawerOverlay}>
           {/* Backdrop (Tapping closes drawer) */}
           <TouchableOpacity
             activeOpacity={1}
@@ -132,8 +125,7 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
               {
                 backgroundColor: theme.surfaceBackground,
                 borderRightColor: theme.borderColor
-              },
-              Platform.OS !== 'web' && { height: windowHeight }
+              }
             ]}
             accessibilityLabel="Navigation drawer"
           >
@@ -412,17 +404,23 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   drawerFooter: {
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: Platform.select({
+      ios: 28,
+      android: 32,
+      default: 16
+    }),
     borderTopWidth: 1
   },
   viewResultsButton: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center'
   },
   viewResultsButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700'
   }
 });
