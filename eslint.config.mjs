@@ -16,7 +16,9 @@ export default tseslint.config(
       '*.config.mjs',
       '*.config.ts',
       '*.mjs',
-      '**/scratch/**'
+      '**/scratch/**',
+      '**/storybook-static/**',
+      '**/.playwright-mcp/**'
     ]
   },
   {

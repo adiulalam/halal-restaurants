@@ -5,22 +5,24 @@ import {
   Text,
   FlatList,
   ScrollView,
-  TextInput,
   StyleSheet,
   StatusBar,
   Linking,
-  Platform,
   ActivityIndicator,
-  TouchableOpacity
+  Platform
 } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
   BrandThemeProvider,
-  KFC_THEME,
+  useBrandTheme,
+  Header,
+  SearchInput,
+  Button,
   RestaurantCard,
   AmenityChip,
   ViewModeTabs,
   RestaurantMapView,
+  ThemeToggleButton,
   requestUserLocation,
   calculateDistanceMiles,
   createAppQueryClient,
@@ -36,6 +38,7 @@ import kfcOfflineData from './assets/kfc-offline-data.json';
 const queryClient = createAppQueryClient();
 
 function KfcStoreFinderScreen() {
+  const theme = useBrandTheme();
   const [searchQuery, setSearchQuery] = useState('');
   // Requirement: Halal only is NOT pre-selected by default, but is the first amenity filter
   const [onlyHalal, setOnlyHalal] = useState(false);
@@ -171,18 +174,21 @@ function KfcStoreFinderScreen() {
   const keyExtractor = useCallback((item: MobileRestaurantItem) => item.id, []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#E4002B" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.appBackground }]}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={theme.headerBackground}
+      />
 
       {/* Main Responsive Container */}
-      <View style={styles.appContainer}>
-        {/* Brand Header */}
-        <View style={styles.header}>
-          <Text style={styles.brandTitle}>HALAL KFC UK</Text>
-          <Text style={styles.brandSubtitle}>
-            {isFetching ? '⚡ Fetching latest stores from KFC...' : `Offline-Ready • ${totalHalal} Verified Halal`}
-          </Text>
-        </View>
+      <View style={[styles.appContainer, { backgroundColor: theme.backgroundColor }]}>
+        {/* Brand Header with Dark Mode Toggle */}
+        <Header
+          title="HALAL KFC UK"
+          subtitle={isFetching ? '⚡ Fetching latest stores from KFC...' : `Offline-Ready • ${totalHalal} Verified Halal`}
+          badge="HFA"
+          rightAction={<ThemeToggleButton />}
+        />
 
         {/* View Mode Tabs: List View & Map View */}
         <ViewModeTabs
@@ -192,20 +198,22 @@ function KfcStoreFinderScreen() {
         />
 
         {/* Search Input */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            placeholder="Search town, postcode or branch (e.g. Bethnal Green, E2 0DJ)..."
-            placeholderTextColor="#888"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-          />
-        </View>
+        <SearchInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search town, postcode or branch (e.g. Bethnal Green, E2 0DJ)..."
+        />
 
         {/* Dynamic Amenities Filter Row: Halal is first, followed by all amenities */}
-        <View style={styles.filterContainer}>
+        <View
+          style={[
+            styles.filterContainer,
+            {
+              backgroundColor: theme.surfaceBackground,
+              borderBottomColor: theme.borderColor
+            }
+          ]}
+        >
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -234,46 +242,46 @@ function KfcStoreFinderScreen() {
         </View>
 
         {/* Results Counter and Location Toggle */}
-        <View style={styles.resultsBar}>
-          <Text style={styles.resultsCount}>
-            Showing {filteredStores.length} {onlyHalal ? 'Halal' : ''} restaurants
+        <View
+          style={[
+            styles.resultsBar,
+            {
+              backgroundColor: theme.surfaceBackground,
+              borderBottomColor: theme.borderColor
+            }
+          ]}
+        >
+          <Text style={[styles.resultsCount, { color: theme.mutedTextColor }]}>
+            Showing {filteredStores.length}{onlyHalal ? ' Halal' : ''} restaurants
             {userLocation ? ' • Nearest First' : ''}
           </Text>
 
           {!userLocation ? (
-            <TouchableOpacity
-              activeOpacity={0.7}
+            <Button
+              title="Sort Nearest"
+              icon="📍"
+              variant="chip-action"
+              size="sm"
               onPress={handleRequestLocation}
-              disabled={isLocating}
-              style={[
-                styles.nearMeButton,
-                Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
-              ]}
-            >
-              {isLocating ? (
-                <ActivityIndicator size="small" color="#E4002B" />
-              ) : (
-                <Text style={styles.nearMeButtonText}>📍 Sort Nearest</Text>
-              )}
-            </TouchableOpacity>
+              loading={isLocating}
+              accessibilityLabel="Sort restaurants by nearest location"
+            />
           ) : (
-            <TouchableOpacity
-              activeOpacity={0.7}
+            <Button
+              title="Default Order"
+              icon="✕"
+              variant="secondary"
+              size="sm"
               onPress={() => setUserLocation(null)}
-              style={[
-                styles.clearLocationButton,
-                Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
-              ]}
-            >
-              <Text style={styles.clearLocationText}>✕ Default Order</Text>
-            </TouchableOpacity>
+              accessibilityLabel="Reset to default restaurant order"
+            />
           )}
         </View>
 
         {/* Content View: List or Map */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#E4002B" />
+            <ActivityIndicator size="large" color={theme.primaryColor} />
           </View>
         ) : viewMode === 'map' ? (
           <RestaurantMapView
@@ -304,7 +312,7 @@ function KfcStoreFinderScreen() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrandThemeProvider theme={KFC_THEME}>
+      <BrandThemeProvider brand="KFC">
         <KfcStoreFinderScreen />
       </BrandThemeProvider>
     </QueryClientProvider>
@@ -315,8 +323,7 @@ registerRootComponent(App);
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: '#F8F9FA'
+    flex: 1
   },
   appContainer: {
     flex: 1,
@@ -330,35 +337,38 @@ const styles = StyleSheet.create({
     })
   },
   header: {
-    backgroundColor: '#E4002B',
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 20
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  headerTitles: {
+    flex: 1,
+    marginRight: 12
+  },
   brandTitle: {
-    color: '#FFFFFF',
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: 0.8
   },
   brandSubtitle: {
-    color: '#FFCDD2',
     fontSize: 13,
-    marginTop: 3
+    marginTop: 2
   },
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE'
+    borderBottomWidth: 1
   },
   searchInput: {
-    backgroundColor: '#F1F3F5',
     borderRadius: 8,
+    borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#1A1A1A',
     ...Platform.select({
       web: {
         outlineStyle: 'none'
@@ -366,9 +376,7 @@ const styles = StyleSheet.create({
     })
   },
   filterContainer: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE'
+    borderBottomWidth: 1
   },
   filterScroll: {
     flexDirection: 'row',
@@ -378,13 +386,13 @@ const styles = StyleSheet.create({
   resultsBar: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
   resultsCount: {
     fontSize: 13,
-    color: '#666666',
     fontWeight: '500',
     flex: 1
   },
@@ -392,24 +400,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#FECACA'
+    borderWidth: 1
   },
   nearMeButtonText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#E4002B'
+    fontWeight: '700'
   },
   clearLocationButton: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: '#F3F4F6'
+    borderWidth: 1
   },
   clearLocationText: {
     fontSize: 11,
-    color: '#6B7280',
     fontWeight: '600'
   },
   loadingContainer: {
