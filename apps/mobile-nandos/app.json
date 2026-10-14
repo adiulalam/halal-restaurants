@@ -4,7 +4,6 @@
     "slug": "halal-nandos-uk",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#BA1B1D"

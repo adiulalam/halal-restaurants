@@ -6,7 +6,8 @@ import {
   ScrollView,
   StyleSheet,
   Platform,
-  ViewStyle
+  ViewStyle,
+  useWindowDimensions
 } from 'react-native';
 import { useBrandTheme } from '../theme';
 import { ThemeToggleButton } from './ThemeToggleButton';
@@ -47,9 +48,10 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
   style
 }: DrawerProps): React.JSX.Element {
   const theme = useBrandTheme();
+  const { height: windowHeight } = useWindowDimensions();
 
   return (
-    <View style={[styles.container, style]}>
+    <>
       {/* Compact Mobile Top Bar (Header) with Drawer Trigger */}
       <View
         style={[
@@ -57,7 +59,8 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
           {
             backgroundColor: theme.headerBackground,
             borderBottomColor: theme.isDark ? theme.borderColor : 'transparent'
-          }
+          },
+          style
         ]}
         accessibilityRole="header"
       >
@@ -105,9 +108,14 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
         ) : null}
       </View>
 
-      {/* Slide-out Drawer & Dimmed Backdrop */}
+      {/* Slide-out Full Height Drawer & Dimmed Backdrop */}
       {isOpen && (
-        <View style={styles.drawerOverlayContainer}>
+        <View
+          style={[
+            styles.drawerOverlay,
+            Platform.OS !== 'web' && { height: windowHeight }
+          ]}
+        >
           {/* Backdrop (Tapping closes drawer) */}
           <TouchableOpacity
             activeOpacity={1}
@@ -124,11 +132,12 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
               {
                 backgroundColor: theme.surfaceBackground,
                 borderRightColor: theme.borderColor
-              }
+              },
+              Platform.OS !== 'web' && { height: windowHeight }
             ]}
             accessibilityLabel="Navigation drawer"
           >
-            {/* Drawer Header with Title, Badge, Description & Close Button */}
+            {/* Drawer Header with Title, Badge, Subtitle & Theme Toggle */}
             <View
               style={[
                 styles.drawerHeader,
@@ -179,11 +188,12 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
               </View>
             </View>
 
-            {/* Drawer Body Scroll */}
+            {/* Drawer Body (Scrollable if viewport is compact/landscape) */}
             <ScrollView
               style={styles.drawerBody}
               contentContainerStyle={styles.drawerBodyContent}
               keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
               {/* Section: View Mode */}
               <Text style={[styles.sectionLabel, { color: theme.mutedTextColor }]}>
@@ -237,16 +247,13 @@ export const Drawer: React.FC<DrawerProps> = React.memo(function Drawer({
           </View>
         </View>
       )}
-    </View>
+    </>
   );
 });
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    zIndex: 100
-  },
   topBar: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -302,13 +309,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600'
   },
-  drawerOverlayContainer: {
+  drawerOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 9999
+    zIndex: 9999,
+    elevation: 999,
+    flexDirection: 'row',
+    ...Platform.select({
+      web: {
+        position: 'fixed'
+      } as any
+    })
   },
   backdrop: {
     position: 'absolute',
@@ -319,30 +333,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.55)'
   },
   drawerSidebar: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
     width: '85%',
     maxWidth: 340,
+    height: '100%',
     borderRightWidth: 1,
     flexDirection: 'column',
+    zIndex: 10000,
+    elevation: 1000,
     ...Platform.select({
       web: {
-        boxShadow: '4px 0 24px rgba(0, 0, 0, 0.25)'
-      } as any,
-      default: {
-        elevation: 16,
-        shadowColor: '#000000',
-        shadowOffset: { width: 4, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10
-      }
+        boxShadow: '4px 0 24px rgba(0, 0, 0, 0.25)',
+        height: '100vh'
+      } as any
     })
   },
   drawerHeader: {
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 14 : 16,
+    paddingTop: Platform.OS === 'ios' ? 14 : 14,
     paddingBottom: 14,
     borderBottomWidth: 1
   },
@@ -390,7 +397,8 @@ const styles = StyleSheet.create({
     flex: 1
   },
   drawerBodyContent: {
-    paddingVertical: 12
+    paddingVertical: 12,
+    paddingBottom: 24
   },
   sectionLabel: {
     fontSize: 11,
