@@ -14,8 +14,10 @@
     "@halal-restaurants/types": "*",
     "@halal-restaurants/ui": "*",
     "expo": "~52.0.0",
+    "expo-location": "~18.0.10",
     "react": "18.3.1",
-    "react-native": "0.76.7"
+    "react-native": "0.76.7",
+    "react-native-webview": "13.12.5"
   }
 }
 

@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   FlatList,
+  ScrollView,
   TextInput,
   StyleSheet,
   StatusBar,
@@ -17,8 +18,15 @@ import {
   NANDOS_THEME,
   RestaurantCard,
   AmenityChip,
+  ViewModeTabs,
+  RestaurantMapView,
+  requestUserLocation,
+  calculateDistanceMiles,
+  LONDON_COORDINATES,
   createAppQueryClient,
-  useRestaurants
+  useRestaurants,
+  type ViewMode,
+  type Coordinates
 } from '@halal-restaurants/ui';
 import { fetchNandosMobileRestaurants } from '@halal-restaurants/scrapers';
 import { registerRootComponent } from 'expo';
@@ -29,43 +37,109 @@ const queryClient = createAppQueryClient();
 
 function NandosStoreFinderScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [onlyHalal, setOnlyHalal] = useState(true);
-  const [onlyOutdoor, setOnlyOutdoor] = useState(false);
+  // Requirement: Halal only is NOT pre-selected by default, but is the first amenity filter
+  const [onlyHalal, setOnlyHalal] = useState(false);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  // Requirement: Default to list view, support map view tab
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const hasPromptedLocationRef = useRef(false);
 
   // TanStack Query: instant load from pre-bundled offline JSON, background live fetch directly from Nando's
-  const { data: stores = [], isLoading, isFetching, refetch } = useRestaurants({
+  const { data: rawStores = [], isLoading, isFetching, refetch } = useRestaurants({
     queryKey: ['nandos-restaurants'],
     offlineData: nandosOfflineData,
     fetcher: fetchNandosMobileRestaurants
   });
 
-  // Fast pre-indexed search
-  const indexedStores = useMemo(() => {
-    return stores.map((s) => ({
-      ...s,
-      searchIndex: `${s.name} ${s.city || ''} ${s.postalCode || ''}`.toLowerCase(),
-      isOutdoor: (s.amenitiesList || []).includes('OUTDOOR_EATING_AREA')
-    }));
-  }, [stores]);
+  // Calculate distance from user location (or London fallback)
+  const storesWithDistance = useMemo(() => {
+    const origin = userLocation || LONDON_COORDINATES;
+    return rawStores.map((s) => {
+      let distanceMiles = s.distanceMiles;
+      if (s.latitude && s.longitude) {
+        distanceMiles = calculateDistanceMiles(
+          origin.latitude,
+          origin.longitude,
+          Number(s.latitude),
+          Number(s.longitude)
+        );
+      }
+      return {
+        ...s,
+        distanceMiles,
+        searchIndex: `${s.name} ${s.city || ''} ${s.postalCode || ''}`.toLowerCase()
+      };
+    });
+  }, [rawStores, userLocation]);
 
+  // Requirement: Show all amenities on the filters dynamically
+  const allAmenities = useMemo(() => {
+    const set = new Set<string>();
+    rawStores.forEach((store) => {
+      (store.amenitiesList || []).forEach((amenity) => {
+        if (amenity && amenity.trim() && !amenity.toLowerCase().includes('halal')) {
+          set.add(amenity.trim());
+        }
+      });
+    });
+    return Array.from(set).sort();
+  }, [rawStores]);
+
+  const totalHalal = useMemo(() => rawStores.filter((s) => s.isHalal).length, [rawStores]);
+
+  // Filter stores according to search query, Halal toggle, and selected amenities
   const filteredStores = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    return indexedStores.filter((store) => {
+    return storesWithDistance.filter((store) => {
       if (onlyHalal && !store.isHalal) return false;
-      if (onlyOutdoor && !store.isOutdoor) return false;
+      if (selectedAmenities.length > 0) {
+        const hasAllAmenities = selectedAmenities.every((sel) =>
+          store.amenitiesList.some((a) => a.toLowerCase() === sel.toLowerCase())
+        );
+        if (!hasAllAmenities) return false;
+      }
       if (q && !store.searchIndex.includes(q)) return false;
       return true;
     });
-  }, [indexedStores, searchQuery, onlyHalal, onlyOutdoor]);
+  }, [storesWithDistance, searchQuery, onlyHalal, selectedAmenities]);
 
+  // Request location with fallback to London
+  const handleRequestLocation = useCallback(async () => {
+    setIsLocating(true);
+    const coords = await requestUserLocation();
+    if (coords) {
+      setUserLocation(coords);
+    }
+    setIsLocating(false);
+  }, []);
+
+  // When clicking map view, ask for permission; if denied, default to London
+  const handleTabChange = useCallback(
+    async (tab: ViewMode) => {
+      setViewMode(tab);
+      if (tab === 'map' && !userLocation && !hasPromptedLocationRef.current) {
+        hasPromptedLocationRef.current = true;
+        await handleRequestLocation();
+      }
+    },
+    [userLocation, handleRequestLocation]
+  );
+
+  const toggleAmenity = useCallback((amenity: string) => {
+    setSelectedAmenities((prev) =>
+      prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]
+    );
+  }, []);
+
+  // Open in default maps app (Directions button)
   const handleOpenDirections = useCallback((store: MobileRestaurantItem) => {
-    const address = [store.name, store.street, store.postalCode].filter(Boolean).join(', ');
+    const address = [store.name, store.street, store.city, store.postalCode].filter(Boolean).join(', ');
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`Nando's, ${address}`)}`;
     Linking.openURL(url);
   }, []);
-
-  const totalHalal = useMemo(() => stores.filter((s) => s.isHalal).length, [stores]);
 
   const renderItem = useCallback(
     ({ item }: { item: MobileRestaurantItem }) => (
@@ -78,7 +152,7 @@ function NandosStoreFinderScreen() {
         isHalal={item.isHalal}
         amenitiesList={item.amenitiesList}
         status={item.status}
-        onPress={() => handleOpenDirections(item)}
+        onOpenMap={() => handleOpenDirections(item)}
       />
     ),
     [handleOpenDirections]
@@ -90,15 +164,22 @@ function NandosStoreFinderScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#BA1B1D" />
 
-      {/* Main Responsive Wrapper (Max width container for Web, full-bleed on Mobile) */}
+      {/* Main Responsive Container */}
       <View style={styles.appContainer}>
         {/* Brand Header */}
         <View style={styles.header}>
           <Text style={styles.brandTitle}>HALAL NANDO'S UK</Text>
           <Text style={styles.brandSubtitle}>
-            {isFetching ? '⚡ Fetching latest stores from Nando\'s...' : `Offline-Ready • ${totalHalal} Verified Halal`}
+            {isFetching ? "⚡ Fetching latest stores from Nando's..." : `Offline-Ready • ${totalHalal} Verified Halal`}
           </Text>
         </View>
+
+        {/* View Mode Tabs: List View & Map View */}
+        <ViewModeTabs
+          activeTab={viewMode}
+          onTabChange={handleTabChange}
+          listCount={filteredStores.length}
+        />
 
         {/* Search Input */}
         <View style={styles.searchContainer}>
@@ -113,31 +194,55 @@ function NandosStoreFinderScreen() {
           />
         </View>
 
-        {/* Filter Controls */}
-        <View style={styles.filterRow}>
-          <AmenityChip
-            label={onlyHalal ? `✓ Halal Only (${totalHalal})` : `All Stores (${stores.length})`}
-            active={onlyHalal}
-            onPress={() => setOnlyHalal(!onlyHalal)}
-          />
-          <AmenityChip
-            label="Outdoor Seating"
-            active={onlyOutdoor}
-            onPress={() => setOnlyOutdoor(!onlyOutdoor)}
-          />
+        {/* Dynamic Amenities Filter Row: Halal is first, followed by all amenities */}
+        <View style={styles.filterContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScroll}
+          >
+            {/* First amenity: Halal Only (not pre-selected) */}
+            <AmenityChip
+              label={onlyHalal ? `✓ Halal Only (${totalHalal})` : `Halal Only (${totalHalal})`}
+              active={onlyHalal}
+              onPress={() => setOnlyHalal(!onlyHalal)}
+            />
+
+            {/* All remaining amenities dynamically shown */}
+            {allAmenities.map((amenity) => {
+              const isSelected = selectedAmenities.includes(amenity);
+              return (
+                <AmenityChip
+                  key={amenity}
+                  label={isSelected ? `✓ ${amenity}` : amenity}
+                  active={isSelected}
+                  onPress={() => toggleAmenity(amenity)}
+                />
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* Results Counter */}
         <View style={styles.resultsBar}>
           <Text style={styles.resultsCount}>
             Showing {filteredStores.length} {onlyHalal ? 'Halal' : ''} restaurants in the UK
+            {selectedAmenities.length > 0 ? ` (filtered by ${selectedAmenities.length} amenities)` : ''}
           </Text>
         </View>
 
+        {/* Content View: List or Map */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#BA1B1D" />
           </View>
+        ) : viewMode === 'map' ? (
+          <RestaurantMapView
+            stores={filteredStores}
+            userLocation={userLocation}
+            isLocating={isLocating}
+            onRequestLocation={handleRequestLocation}
+          />
         ) : (
           <FlatList
             data={filteredStores}
@@ -179,7 +284,7 @@ const styles = StyleSheet.create({
     width: '100%',
     ...Platform.select({
       web: {
-        maxWidth: 820,
+        maxWidth: 860,
         alignSelf: 'center',
         boxShadow: '0 0 24px rgba(0,0,0,0.06)'
       }
@@ -187,7 +292,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#BA1B1D',
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20
   },
   brandTitle: {
@@ -199,11 +304,11 @@ const styles = StyleSheet.create({
   brandSubtitle: {
     color: '#FED7AA',
     fontSize: 13,
-    marginTop: 4
+    marginTop: 3
   },
   searchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F3E8E2'
@@ -212,8 +317,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FBF7F5',
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 15,
+    paddingVertical: 10,
+    fontSize: 14,
     color: '#1C1917',
     ...Platform.select({
       web: {
@@ -221,11 +326,15 @@ const styles = StyleSheet.create({
       } as any
     })
   },
-  filterRow: {
+  filterContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3E8E2'
+  },
+  filterScroll: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#FFFFFF'
+    paddingVertical: 10
   },
   resultsBar: {
     paddingHorizontal: 16,

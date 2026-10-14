@@ -1,6 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useBrandTheme } from './theme';
+
+export type ViewMode = 'list' | 'map';
+
+export interface ViewModeTabsProps {
+  activeTab: ViewMode;
+  onTabChange: (tab: ViewMode) => void;
+  listCount?: number;
+}
+
+export const ViewModeTabs: (props: ViewModeTabsProps) => React.JSX.Element = React.memo(
+  function ViewModeTabs({
+    activeTab,
+    onTabChange,
+    listCount
+  }: ViewModeTabsProps): React.JSX.Element {
+    const theme = useBrandTheme();
+
+    return (
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => onTabChange('list')}
+          style={[
+            styles.tabButton,
+            activeTab === 'list' && [styles.activeTabButton, { borderBottomColor: theme.primaryColor }],
+            Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
+          ]}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'list' && [styles.activeTabText, { color: theme.primaryColor }]
+            ]}
+          >
+            📋 List View {listCount !== undefined ? `(${listCount})` : ''}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => onTabChange('map')}
+          style={[
+            styles.tabButton,
+            activeTab === 'map' && [styles.activeTabButton, { borderBottomColor: theme.primaryColor }],
+            Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
+          ]}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'map' && [styles.activeTabText, { color: theme.primaryColor }]
+            ]}
+          >
+            🗺️ Map View
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+) as unknown as (props: ViewModeTabsProps) => React.JSX.Element;
 
 export interface HalalBadgeProps {
   label?: string;
@@ -74,7 +134,7 @@ export interface RestaurantCardProps {
   isHalal: boolean;
   amenitiesList: string[];
   status?: string | null;
-  onPress?: () => void;
+  onOpenMap?: () => void;
 }
 
 export const RestaurantCard: (props: RestaurantCardProps) => React.JSX.Element = React.memo(
@@ -87,18 +147,19 @@ export const RestaurantCard: (props: RestaurantCardProps) => React.JSX.Element =
     isHalal,
     amenitiesList,
     status,
-    onPress
+    onOpenMap
   }: RestaurantCardProps): React.JSX.Element {
     const theme = useBrandTheme();
+    const [expandedAmenities, setExpandedAmenities] = useState(false);
+
+    const displayedAmenities = expandedAmenities ? amenitiesList : amenitiesList.slice(0, 5);
+    const hasMore = amenitiesList.length > 5;
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={onPress}
+      <View
         style={[
           styles.cardContainer,
-          { backgroundColor: theme.cardBackground },
-          Platform.OS === 'web' && ({ cursor: 'pointer', transition: 'transform 0.15s ease' } as any)
+          { backgroundColor: theme.cardBackground }
         ]}
       >
         <View style={styles.cardHeader}>
@@ -128,22 +189,74 @@ export const RestaurantCard: (props: RestaurantCardProps) => React.JSX.Element =
 
         {amenitiesList.length > 0 && (
           <View style={styles.amenitiesContainer}>
-            {amenitiesList.slice(0, 5).map((amenity, idx) => (
+            {displayedAmenities.map((amenity, idx) => (
               <AmenityChip key={idx} label={amenity} />
             ))}
-            {amenitiesList.length > 5 && (
-              <Text style={[styles.moreText, { color: theme.mutedTextColor }]}>
-                +{amenitiesList.length - 5} more
-              </Text>
+            {hasMore && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setExpandedAmenities(!expandedAmenities)}
+                style={[
+                  styles.moreButton,
+                  Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
+                ]}
+              >
+                <Text style={[styles.moreButtonText, { color: theme.primaryColor }]}>
+                  {expandedAmenities ? 'Show less' : `+${amenitiesList.length - 5} more`}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         )}
-      </TouchableOpacity>
+
+        {onOpenMap && (
+          <View style={styles.cardFooter}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={onOpenMap}
+              style={[
+                styles.mapButton,
+                { borderColor: theme.primaryColor },
+                Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
+              ]}
+            >
+              <Text style={[styles.mapButtonText, { color: theme.primaryColor }]}>
+                📍 Open in Maps
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   }
 ) as unknown as (props: RestaurantCardProps) => React.JSX.Element;
 
 const styles = StyleSheet.create({
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB'
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent'
+  },
+  activeTabButton: {
+    borderBottomWidth: 3
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280'
+  },
+  activeTabText: {
+    fontWeight: '800'
+  },
   badgeBase: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -248,8 +361,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 6
   },
-  moreText: {
-    fontSize: 11,
-    marginLeft: 4
+  moreButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    marginRight: 6,
+    marginBottom: 6
+  },
+  moreButtonText: {
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  cardFooter: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    flexDirection: 'row',
+    justifyContent: 'flex-end'
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF'
+  },
+  mapButtonText: {
+    fontSize: 13,
+    fontWeight: '700'
   }
 });
