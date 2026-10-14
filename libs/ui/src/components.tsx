@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useBrandTheme } from './theme';
 
 export interface HalalBadgeProps {
@@ -7,28 +7,30 @@ export interface HalalBadgeProps {
   isHalal: boolean;
 }
 
-export function HalalBadge({
-  label = '100% HALAL CERTIFIED',
-  isHalal
-}: HalalBadgeProps): React.JSX.Element {
-  const theme = useBrandTheme();
+export const HalalBadge: (props: HalalBadgeProps) => React.JSX.Element = React.memo(
+  function HalalBadge({
+    label = '100% HALAL CERTIFIED',
+    isHalal
+  }: HalalBadgeProps): React.JSX.Element {
+    const theme = useBrandTheme();
 
-  if (!isHalal) {
+    if (!isHalal) {
+      return (
+        <View style={[styles.badgeBase, styles.nonHalalBadge]}>
+          <Text style={styles.nonHalalText}>STANDARD</Text>
+        </View>
+      );
+    }
+
     return (
-      <View style={[styles.badgeBase, styles.nonHalalBadge]}>
-        <Text style={styles.nonHalalText}>STANDARD</Text>
+      <View style={[styles.badgeBase, { backgroundColor: theme.halalBadgeColor }]}>
+        <Text style={[styles.badgeText, { color: theme.halalBadgeTextColor }]}>
+          ✓ {label}
+        </Text>
       </View>
     );
   }
-
-  return (
-    <View style={[styles.badgeBase, { backgroundColor: theme.halalBadgeColor }]}>
-      <Text style={[styles.badgeText, { color: theme.halalBadgeTextColor }]}>
-        ✓ {label}
-      </Text>
-    </View>
-  );
-}
+) as unknown as (props: HalalBadgeProps) => React.JSX.Element;
 
 export interface AmenityChipProps {
   label: string;
@@ -36,29 +38,32 @@ export interface AmenityChipProps {
   onPress?: () => void;
 }
 
-export function AmenityChip({
-  label,
-  active = false,
-  onPress
-}: AmenityChipProps): React.JSX.Element {
-  const theme = useBrandTheme();
+export const AmenityChip: (props: AmenityChipProps) => React.JSX.Element = React.memo(
+  function AmenityChip({
+    label,
+    active = false,
+    onPress
+  }: AmenityChipProps): React.JSX.Element {
+    const theme = useBrandTheme();
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      disabled={!onPress}
-      onPress={onPress}
-      style={[
-        styles.chipBase,
-        active && { backgroundColor: theme.primaryColor, borderColor: theme.primaryColor }
-      ]}
-    >
-      <Text style={[styles.chipText, active && { color: '#FFFFFF', fontWeight: 'bold' }]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
+    return (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        disabled={!onPress}
+        onPress={onPress}
+        style={[
+          styles.chipBase,
+          active && { backgroundColor: theme.primaryColor, borderColor: theme.primaryColor },
+          Platform.OS === 'web' && ({ cursor: onPress ? 'pointer' : 'default' } as any)
+        ]}
+      >
+        <Text style={[styles.chipText, active && { color: '#FFFFFF', fontWeight: 'bold' }]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  }
+) as unknown as (props: AmenityChipProps) => React.JSX.Element;
 
 export interface RestaurantCardProps {
   name: string;
@@ -72,68 +77,71 @@ export interface RestaurantCardProps {
   onPress?: () => void;
 }
 
-export function RestaurantCard({
-  name,
-  street,
-  city,
-  postalCode,
-  distanceMiles,
-  isHalal,
-  amenitiesList,
-  status,
-  onPress
-}: RestaurantCardProps): React.JSX.Element {
-  const theme = useBrandTheme();
+export const RestaurantCard: (props: RestaurantCardProps) => React.JSX.Element = React.memo(
+  function RestaurantCard({
+    name,
+    street,
+    city,
+    postalCode,
+    distanceMiles,
+    isHalal,
+    amenitiesList,
+    status,
+    onPress
+  }: RestaurantCardProps): React.JSX.Element {
+    const theme = useBrandTheme();
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      style={[
-        styles.cardContainer,
-        { backgroundColor: theme.cardBackground, shadowColor: '#000000' }
-      ]}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.titleContainer}>
-          <Text style={[styles.restaurantName, { color: theme.textColor }]}>{name}</Text>
-          <Text style={[styles.addressText, { color: theme.mutedTextColor }]}>
-            {[street, city, postalCode].filter(Boolean).join(', ')}
-          </Text>
-        </View>
-        {distanceMiles !== undefined && distanceMiles !== null && (
-          <View style={[styles.distanceContainer, { borderColor: theme.primaryColor }]}>
-            <Text style={[styles.distanceText, { color: theme.primaryColor }]}>
-              {distanceMiles} mi
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onPress}
+        style={[
+          styles.cardContainer,
+          { backgroundColor: theme.cardBackground },
+          Platform.OS === 'web' && ({ cursor: 'pointer', transition: 'transform 0.15s ease' } as any)
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            <Text style={[styles.restaurantName, { color: theme.textColor }]}>{name}</Text>
+            <Text style={[styles.addressText, { color: theme.mutedTextColor }]}>
+              {[street, city, postalCode].filter(Boolean).join(', ')}
             </Text>
           </View>
-        )}
-      </View>
-
-      <View style={styles.badgeRow}>
-        <HalalBadge isHalal={isHalal} />
-        {status && (
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>{status.toUpperCase()}</Text>
-          </View>
-        )}
-      </View>
-
-      {amenitiesList.length > 0 && (
-        <View style={styles.amenitiesContainer}>
-          {amenitiesList.slice(0, 4).map((amenity, idx) => (
-            <AmenityChip key={idx} label={amenity} />
-          ))}
-          {amenitiesList.length > 4 && (
-            <Text style={[styles.moreText, { color: theme.mutedTextColor }]}>
-              +{amenitiesList.length - 4} more
-            </Text>
+          {distanceMiles !== undefined && distanceMiles !== null && (
+            <View style={[styles.distanceContainer, { borderColor: theme.primaryColor }]}>
+              <Text style={[styles.distanceText, { color: theme.primaryColor }]}>
+                {distanceMiles} mi
+              </Text>
+            </View>
           )}
         </View>
-      )}
-    </TouchableOpacity>
-  );
-};
+
+        <View style={styles.badgeRow}>
+          <HalalBadge isHalal={isHalal} />
+          {status && (
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>{status.toUpperCase()}</Text>
+            </View>
+          )}
+        </View>
+
+        {amenitiesList.length > 0 && (
+          <View style={styles.amenitiesContainer}>
+            {amenitiesList.slice(0, 5).map((amenity, idx) => (
+              <AmenityChip key={idx} label={amenity} />
+            ))}
+            {amenitiesList.length > 5 && (
+              <Text style={[styles.moreText, { color: theme.mutedTextColor }]}>
+                +{amenitiesList.length - 5} more
+              </Text>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }
+) as unknown as (props: RestaurantCardProps) => React.JSX.Element;
 
 const styles = StyleSheet.create({
   badgeBase: {
@@ -172,12 +180,21 @@ const styles = StyleSheet.create({
   cardContainer: {
     borderRadius: 12,
     padding: 16,
-    marginVertical: 8,
+    marginVertical: 6,
     marginHorizontal: 16,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        border: '1px solid #F1F3F5'
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 3
+      }
+    })
   },
   cardHeader: {
     flexDirection: 'row',
@@ -189,7 +206,7 @@ const styles = StyleSheet.create({
     marginRight: 8
   },
   restaurantName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     marginBottom: 4
   },
