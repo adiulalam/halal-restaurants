@@ -1,0 +1,13 @@
+node_modules/
+dist/
+tmp/
+.nx/cache/
+.nx/workspace-data/
+.playwright-mcp/
+*.log
+*.db
+*.db-journal
+.env
+.env.local
+.DS_Store
+Thumbs.db
