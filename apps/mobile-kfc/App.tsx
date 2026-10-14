@@ -10,7 +10,8 @@ import {
   StatusBar,
   Linking,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  TouchableOpacity
 } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -22,7 +23,6 @@ import {
   RestaurantMapView,
   requestUserLocation,
   calculateDistanceMiles,
-  LONDON_COORDINATES,
   createAppQueryClient,
   useRestaurants,
   type ViewMode,
@@ -53,15 +53,14 @@ function KfcStoreFinderScreen() {
     fetcher: fetchKfcMobileRestaurants
   });
 
-  // Calculate distance from user location (or London fallback)
-  const storesWithDistance = useMemo(() => {
-    const origin = userLocation || LONDON_COORDINATES;
+  // Calculate distance only when userLocation is turned on
+  const processedStores = useMemo(() => {
     return rawStores.map((s) => {
-      let distanceMiles = s.distanceMiles;
-      if (s.latitude && s.longitude) {
+      let distanceMiles: number | null = null;
+      if (userLocation && s.latitude && s.longitude) {
         distanceMiles = calculateDistanceMiles(
-          origin.latitude,
-          origin.longitude,
+          userLocation.latitude,
+          userLocation.longitude,
           Number(s.latitude),
           Number(s.longitude)
         );
@@ -93,7 +92,7 @@ function KfcStoreFinderScreen() {
   const filteredStores = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    return storesWithDistance.filter((store) => {
+    const result = processedStores.filter((store) => {
       if (onlyHalal && !store.isHalal) return false;
       if (selectedAmenities.length > 0) {
         const hasAllAmenities = selectedAmenities.every((sel) =>
@@ -104,7 +103,18 @@ function KfcStoreFinderScreen() {
       if (q && !store.searchIndex.includes(q)) return false;
       return true;
     });
-  }, [storesWithDistance, searchQuery, onlyHalal, selectedAmenities]);
+
+    // Requirement: On list view, show by nearest if location is turned on. If not, default order.
+    if (userLocation) {
+      return [...result].sort((a, b) => {
+        const distA = a.distanceMiles ?? Infinity;
+        const distB = b.distanceMiles ?? Infinity;
+        return distA - distB;
+      });
+    }
+
+    return result;
+  }, [processedStores, searchQuery, onlyHalal, selectedAmenities, userLocation]);
 
   // Request location with fallback to London
   const handleRequestLocation = useCallback(async () => {
@@ -223,12 +233,41 @@ function KfcStoreFinderScreen() {
           </ScrollView>
         </View>
 
-        {/* Results Counter */}
+        {/* Results Counter and Location Toggle */}
         <View style={styles.resultsBar}>
           <Text style={styles.resultsCount}>
-            Showing {filteredStores.length} {onlyHalal ? 'Halal' : ''} restaurants in the UK
-            {selectedAmenities.length > 0 ? ` (filtered by ${selectedAmenities.length} amenities)` : ''}
+            Showing {filteredStores.length} {onlyHalal ? 'Halal' : ''} restaurants
+            {userLocation ? ' • Nearest First' : ''}
           </Text>
+
+          {!userLocation ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleRequestLocation}
+              disabled={isLocating}
+              style={[
+                styles.nearMeButton,
+                Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
+              ]}
+            >
+              {isLocating ? (
+                <ActivityIndicator size="small" color="#E4002B" />
+              ) : (
+                <Text style={styles.nearMeButtonText}>📍 Sort Nearest</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setUserLocation(null)}
+              style={[
+                styles.clearLocationButton,
+                Platform.OS === 'web' && ({ cursor: 'pointer' } as any)
+              ]}
+            >
+              <Text style={styles.clearLocationText}>✕ Default Order</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Content View: List or Map */}
@@ -338,12 +377,40 @@ const styles = StyleSheet.create({
   },
   resultsBar: {
     paddingHorizontal: 16,
-    paddingVertical: 8
+    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   resultsCount: {
     fontSize: 13,
     color: '#666666',
-    fontWeight: '500'
+    fontWeight: '500',
+    flex: 1
+  },
+  nearMeButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA'
+  },
+  nearMeButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#E4002B'
+  },
+  clearLocationButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6'
+  },
+  clearLocationText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600'
   },
   loadingContainer: {
     flex: 1,
