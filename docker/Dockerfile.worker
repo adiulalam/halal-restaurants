@@ -45,3 +45,4 @@ COPY --from=builder /app /app
 VOLUME [ "/app/data" ]
 
 CMD ["npm", "start", "-w", "apps/worker"]
+

@@ -1,108 +1,156 @@
-# HalalRestaurants
+# UK Halal Restaurants Monorepo
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A scalable TypeScript monorepo powered by **Nx**, providing dedicated mobile & web applications for **Halal KFC UK** and **Halal Nando's UK**, backed by a reverse-engineered discovery pipeline, a **BullMQ** background job queue engine, a **Prisma 7** SQLite database, and a high-performance **Fastify REST API**.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+---
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/npm-workspaces-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 1. Monorepo Architecture
 
-## Run tasks
-
-To run tasks with Nx use:
-
-```sh
-npx nx <target> <project-name>
+```text
+halal-restaurants/
+├── apps/
+│   ├── mobile-kfc/               # React Native / Expo app for Halal KFC UK (Web + Android + iOS)
+│   ├── mobile-nandos/            # React Native / Expo app for Halal Nando's UK (Web + Android + iOS)
+│   ├── api/                      # Fastify REST API providing search, nearby geo-queries & stats
+│   └── worker/                   # BullMQ background worker executing periodic scrapers
+│
+├── libs/
+│   ├── ui/                       # Shared React Native & Web component library (Design System)
+│   │   ├── components.tsx        # HalalBadge, AmenityChip, RestaurantCard (React.memo optimized)
+│   │   ├── theme.tsx             # KFC & Nando's brand theme tokens
+│   │   └── query.ts              # TanStack Query hook with offline bundled JSON fallback
+│   │
+│   ├── database/                 # Prisma 7 database layer with LibSQL adapter
+│   │   ├── prisma/               # schema.prisma, dev.db (1,551 UK stores seeded)
+│   │   ├── src/chains/           # Extensible per-restaurant database adapters (kfc.ts, nandos.ts)
+│   │   └── src/queries.ts        # Pluggable multi-chain search, nearby geo-search & stats
+│   │
+│   ├── jobs/                     # BullMQ background job definitions & repeat schedulers
+│   │   ├── src/chains/           # Per-restaurant sync processors (kfc.ts, nandos.ts)
+│   │   ├── src/workers.ts        # Dynamic worker dispatching to registered chain handlers
+│   │   └── src/scheduler.ts      # Repeatable cron triggers (daily at 03:00 AM)
+│   │
+│   ├── scrapers/                 # Zero-API reverse-engineered extraction clients
+│   │   ├── src/kfc.ts            # KFC UK direct API client (1,061 stores, 225 Halal)
+│   │   └── src/nandos.ts         # Nando's UK RSC stream parser (490 stores, 107 Halal)
+│   │
+│   └── types/                    # Shared TypeScript interfaces & Zod validation schemas
+│       ├── src/common.ts         # MobileRestaurantItem, RestaurantQuery, NearbyQuery
+│       └── src/chains/           # Per-restaurant schemas (chains/kfc.ts, chains/nandos.ts)
+│
+├── docker/
+│   ├── docker-compose.yml        # Redis broker, Bull-Board UI, API service, and Worker stack
+│   ├── Dockerfile.api            # Multi-stage production container for Fastify API
+│   └── Dockerfile.worker         # Multi-stage production container for BullMQ Worker
+│
+├── prisma.config.ts              # Prisma 7 configuration file (replaces schema url)
+├── eslint.config.mjs             # ESLint flat config with TypeScript rules
+└── package.json                  # Root workspace manifests & device scripts
 ```
 
-For example:
+---
 
-```sh
-npx nx build myproject
+## 2. Quick Start & Available Scripts
+
+### Mobile & Web Applications
+
+Run on your browser, iOS simulator, or Android device/emulator:
+
+```bash
+# Halal KFC UK App
+npm run start:kfc:web       # Launch KFC App in Web Browser (Responsive desktop view)
+npm run start:kfc:android   # Launch KFC App on Android Device / Emulator
+npm run start:kfc:ios       # Launch KFC App on iOS Simulator
+
+# Halal Nando's UK App
+npm run start:nandos:web    # Launch Nando's App in Web Browser (Responsive desktop view)
+npm run start:nandos:android# Launch Nando's App on Android Device / Emulator
+npm run start:nandos:ios    # Launch Nando's App on iOS Simulator
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+### Backend Microservices & Background Workers
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```bash
+# Fastify REST API (Port 3001)
+npm run start:api           # Run REST API in production mode
+npm run dev:api             # Run REST API with hot-reload watch
 
-## Versioning and releasing
+# BullMQ Background Worker (Repeatable 3 AM Sync)
+npm run start:worker        # Run background scraping worker
+npm run dev:worker          # Run worker with hot-reload watch
 
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
-```sh
-npx nx add @nx/react
+# Standalone Scrapers (Instant verification)
+npm run scrape:kfc          # Scrape KFC UK directly (1,061 stores, 225 Halal)
+npm run scrape:nandos       # Scrape Nando's UK directly (490 stores, 107 Halal)
 ```
 
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
+### Code Quality & Database Operations
 
-```sh
-# Generate an app
-npx nx g @nx/react:app demo
+```bash
+npm run typecheck           # Strict TypeScript validation across all workspaces
+npm run lint                # ESLint check across all TypeScript modules
+npm run lint:fix            # Auto-fix linting issues
 
-# Generate a library
-npx nx g @nx/react:lib some-lib
+npm run db:generate         # Generate Prisma 7 Client with LibSQL adapter
+npm run db:push             # Push Prisma schema changes to dev.db
+npm run db:studio           # Open Prisma Studio web GUI to browse database
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Docker Container Stack
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Run the full local/production containerized ecosystem:
 
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
+```bash
+npm run docker:up           # Start Redis (6379), Bull-Board (3000), API (3001), and Worker
+npm run docker:logs         # Stream live container logs
+npm run docker:down         # Stop containers
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+- **Bull-Board Dashboard**: [http://localhost:3000](http://localhost:3000) (Monitor active, completed, and failed sync jobs, identical to Sidekiq Web)
+- **REST API Endpoints**: [http://localhost:3001](http://localhost:3001)
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-### Step 2
+## 3. REST API Endpoints
 
-Use the following command to configure a CI workflow for your workspace:
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Healthcheck and uptime |
+| `GET` | `/api/v1/stats` | Live store statistics, Halal counts, and scrape audit logs |
+| `GET` | `/api/v1/chains` | Metadata for all registered chains (brand colors, supported filters) |
+| `GET` | `/api/v1/restaurants` | Multi-filter search (`q`, `halal=true`, `chain=kfc`, `driveThru=true`, etc.) |
+| `GET` | `/api/v1/restaurants/nearby` | Proximity search by GPS (`lat=51.5&lng=-0.1&radius=5`) sorted nearest first |
+| `GET` | `/api/v1/restaurants/:chain/:id` | Detailed store lookup (facilities, opening hours, channels) |
 
-```sh
-npx nx g ci-workflow
+Example Nearby Query:
+```bash
+curl "http://localhost:3001/api/v1/restaurants/nearby?lat=51.5074&lng=-0.1278&halal=true&radius=3&limit=5"
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-## Install Nx Console
+## 4. Scalability Architecture: Adding a New Restaurant Chain
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+The monorepo uses a **Pluggable Chain Adapter Pattern** so adding a new restaurant chain (e.g., McDonald's, Subway, Wingstop) does not require modifying core search or API routes:
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. **Define Chain Types** in `libs/types/src/chains/<chain>.ts`:
+   - Create the chain-specific input schema with **Zod**.
+2. **Add Scraper** in `libs/scrapers/src/<chain>.ts`:
+   - Implement the reverse-engineered store locator parser.
+3. **Create Database Table & Adapter** in `libs/database/src/chains/<chain>.ts`:
+   - Add model to `libs/database/prisma/schema.prisma`.
+   - Implement the `RestaurantChainAdapter` interface (`search`, `getById`, `getStats`, `upsert`).
+   - Register it with `chainRegistry.register(myNewAdapter)`.
+4. **Create Background Sync Handler** in `libs/jobs/src/chains/<chain>.ts`:
+   - Register it with `jobChainRegistry.register('<CHAIN>', syncMyChain)`.
+5. **Create Mobile App (optional)** in `apps/mobile-<chain>/`:
+   - Connect to `@halal-restaurants/ui` using brand theme tokens.
 
-## Useful links
+---
 
-Learn more:
+## 5. Prisma 7 & SQLite Architecture
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/npm-workspaces-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+This project is built on **Prisma 7** using:
+- **`prisma.config.ts`**: Centralized configuration handling schema paths and datasource URLs using `defineConfig`.
+- **`@prisma/adapter-libsql`**: Native driver adapter connecting directly to `dev.db` with zero binary engine dependencies.
+- **Table-per-chain schema**: `KfcRestaurant` and `NandosRestaurant` models maintain complete column fidelity for chain-specific attributes.

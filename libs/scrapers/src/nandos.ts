@@ -61,7 +61,7 @@ export async function scrapeNandosUk(): Promise<NandosRestaurantInput[]> {
         const cleaned = slice.replace(/"\$undefined"/g, 'null');
         const parsed = JSON.parse(cleaned);
         rawRestaurants.push(...parsed);
-      } catch (err) {
+      } catch {
         // Skip unparseable slice
       }
     }

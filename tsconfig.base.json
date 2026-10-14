@@ -14,6 +14,12 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "lib": ["es2022", "dom"],
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
@@ -27,4 +33,3 @@
   },
   "exclude": ["node_modules", "tmp", "dist"]
 }
-

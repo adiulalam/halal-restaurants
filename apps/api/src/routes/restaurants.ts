@@ -2,37 +2,29 @@ import type { FastifyPluginAsync } from 'fastify';
 import {
   searchRestaurants,
   findNearbyRestaurants,
-  getKfcRestaurantById,
-  getNandosRestaurantById
+  getRestaurantByChainAndId,
+  chainRegistry
 } from '@halal-restaurants/database';
 import { RestaurantQuerySchema, NearbyQuerySchema } from '@halal-restaurants/types';
 
 export const restaurantRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * GET /api/v1/chains
-   * Supported restaurant chains metadata
+   * Supported restaurant chains metadata dynamically pulled from registered adapters
    */
   fastify.get('/chains', async () => {
+    const chains = chainRegistry.getAll().map((adapter) => ({
+      id: adapter.chainId,
+      name: adapter.displayName,
+      brandColor: adapter.brandColor,
+      accentColor: adapter.accentColor,
+      description: adapter.description,
+      supportedFilters: adapter.supportedFilters
+    }));
+
     return {
       success: true,
-      data: [
-        {
-          id: 'kfc',
-          name: 'KFC UK',
-          brandColor: '#E4002B',
-          accentColor: '#1C1917',
-          description: 'Official UK KFC restaurants with certified Halal filtering',
-          supportedFilters: ['halal', 'driveThru', 'wifi', 'babyChanging', 'disabilityAccess']
-        },
-        {
-          id: 'nandos',
-          name: "Nando's UK",
-          brandColor: '#BA1B1D',
-          accentColor: '#F5B041',
-          description: "Official UK Nando's restaurants with certified Halal filtering",
-          supportedFilters: ['halal', 'outdoorSeating', 'wifi', 'babyChanging', 'disabledAccess']
-        }
-      ]
+      data: chains
     };
   });
 
@@ -81,44 +73,34 @@ export const restaurantRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   /**
-   * GET /api/v1/restaurants/kfc/:id
-   * Get single KFC store details
+   * GET /api/v1/restaurants/:chain/:id
+   * Extensible single restaurant lookup supporting any registered chain
    */
-  fastify.get<{ Params: { id: string } }>('/restaurants/kfc/:id', async (req, reply) => {
-    const { id } = req.params;
-    const store = await getKfcRestaurantById(id);
+  fastify.get<{ Params: { chain: string; id: string } }>(
+    '/restaurants/:chain/:id',
+    async (req, reply) => {
+      const { chain, id } = req.params;
 
-    if (!store) {
-      return reply.status(404).send({
-        success: false,
-        error: `KFC restaurant with storeId '${id}' not found.`
-      });
+      if (!chainRegistry.has(chain)) {
+        return reply.status(404).send({
+          success: false,
+          error: `Unknown chain '${chain}'. Supported chains: ${chainRegistry.getAll().map(a => a.chainId).join(', ')}`
+        });
+      }
+
+      const store = await getRestaurantByChainAndId(chain, id);
+
+      if (!store) {
+        return reply.status(404).send({
+          success: false,
+          error: `Restaurant '${id}' not found in chain '${chain}'.`
+        });
+      }
+
+      return {
+        success: true,
+        data: store
+      };
     }
-
-    return {
-      success: true,
-      data: store
-    };
-  });
-
-  /**
-   * GET /api/v1/restaurants/nandos/:id
-   * Get single Nando's branch details
-   */
-  fastify.get<{ Params: { id: string } }>('/restaurants/nandos/:id', async (req, reply) => {
-    const { id } = req.params;
-    const store = await getNandosRestaurantById(id);
-
-    if (!store) {
-      return reply.status(404).send({
-        success: false,
-        error: `Nando's restaurant with branchCode '${id}' not found.`
-      });
-    }
-
-    return {
-      success: true,
-      data: store
-    };
-  });
+  );
 };

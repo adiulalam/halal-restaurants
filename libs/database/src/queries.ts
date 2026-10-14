@@ -1,208 +1,40 @@
-import { prisma, calculateDistanceMiles } from './index';
+import { prisma } from './index';
 import type {
   MobileRestaurantItem,
   RestaurantQuery,
   NearbyQuery
 } from '@halal-restaurants/types';
+import { chainRegistry, kfcAdapter, nandosAdapter } from './chains/registry';
 
 /**
- * Format KFC raw amenities list
- */
-function extractKfcAmenities(store: {
-  isHalal: boolean;
-  hasDriveThru: boolean;
-  hasWifi: boolean;
-  hasDisabilityAccess: boolean;
-  hasBabyChanging: boolean;
-  isVeganFriendly: boolean;
-  facilitiesJson?: string | null;
-}): string[] {
-  const list: string[] = [];
-  if (store.isHalal) list.push('100% Halal Certified');
-  if (store.hasDriveThru) list.push('Drive Thru');
-  if (store.hasWifi) list.push('Free Wifi');
-  if (store.hasDisabilityAccess) list.push('Disability Access');
-  if (store.hasBabyChanging) list.push('Baby Changing');
-  if (store.isVeganFriendly) list.push('Vegan Friendly');
-
-  if (store.facilitiesJson) {
-    try {
-      const parsed = JSON.parse(store.facilitiesJson);
-      if (Array.isArray(parsed)) {
-        for (const item of parsed) {
-          const name = typeof item === 'string' ? item : item?.name;
-          if (name && !list.includes(name) && !name.toLowerCase().includes('halal')) {
-            list.push(name);
-          }
-        }
-      }
-    } catch {
-      // Ignore parse errors
-    }
-  }
-
-  return list;
-}
-
-/**
- * Format Nando's raw amenities list
- */
-function extractNandosAmenities(branch: {
-  isHalal: boolean;
-  hasOutdoorSeating: boolean;
-  hasBabyChanging: boolean;
-  hasDisabledAccess: boolean;
-  hasWifi: boolean;
-  hasDelivery: boolean;
-  hasCollection: boolean;
-  amenitiesJson?: string | null;
-}): string[] {
-  const list: string[] = [];
-  if (branch.isHalal) list.push('Halal Certified');
-  if (branch.hasOutdoorSeating) list.push('Outdoor Seating');
-  if (branch.hasDisabledAccess) list.push('Disabled Access');
-  if (branch.hasBabyChanging) list.push('Baby Changing');
-  if (branch.hasWifi) list.push('Wifi');
-  if (branch.hasDelivery) list.push('Delivery');
-  if (branch.hasCollection) list.push('Collection');
-
-  if (branch.amenitiesJson) {
-    try {
-      const parsed = JSON.parse(branch.amenitiesJson);
-      if (Array.isArray(parsed)) {
-        for (const item of parsed) {
-          const str = typeof item === 'string' ? item : item?.name;
-          if (str && !str.includes('HALAL')) {
-            const formatted = str
-              .toLowerCase()
-              .split('_')
-              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(' ');
-            if (!list.includes(formatted)) {
-              list.push(formatted);
-            }
-          }
-        }
-      }
-    } catch {
-      // Ignore parse errors
-    }
-  }
-
-  return list;
-}
-
-/**
- * Comprehensive Restaurant Search with Geo-Sorting and Multi-Filters
+ * Universal Restaurant Search with Geo-Sorting and Multi-Filtering
+ * Delegates querying to registered per-chain adapters dynamically
  */
 export async function searchRestaurants(query: RestaurantQuery) {
   const {
     chain = 'all',
-    halal,
-    q,
     lat,
     lng,
-    radius = 10,
-    driveThru,
-    outdoorSeating,
     limit = 50,
     offset = 0
   } = query;
 
-  const results: MobileRestaurantItem[] = [];
+  // 1. Resolve which adapters to query
+  const targetAdapters =
+    chain === 'all'
+      ? chainRegistry.getAll()
+      : [chainRegistry.get(chain)].filter(Boolean);
 
-  // 1. Fetch KFC if applicable
-  if (chain === 'all' || chain === 'kfc') {
-    const kfcWhere: any = {};
-    if (halal !== undefined) kfcWhere.isHalal = halal;
-    if (driveThru !== undefined) kfcWhere.hasDriveThru = driveThru;
-
-    if (q && q.trim()) {
-      const term = q.trim();
-      kfcWhere.OR = [
-        { name: { contains: term } },
-        { city: { contains: term } },
-        { postalCode: { contains: term } },
-        { street: { contains: term } }
-      ];
-    }
-
-    const kfcStores = await prisma.kfcRestaurant.findMany({
-      where: kfcWhere
-    });
-
-    for (const store of kfcStores) {
-      let distanceMiles: number | null = null;
-      if (lat !== undefined && lng !== undefined && store.latitude && store.longitude) {
-        distanceMiles = calculateDistanceMiles(lat, lng, store.latitude, store.longitude);
-        if (distanceMiles > radius) continue; // Out of radius
-      }
-
-      results.push({
-        id: `kfc-${store.storeId}`,
-        name: store.name,
-        street: store.street,
-        city: store.city,
-        postalCode: store.postalCode,
-        latitude: store.latitude,
-        longitude: store.longitude,
-        distanceMiles,
-        isHalal: store.isHalal,
-        amenitiesList: extractKfcAmenities(store),
-        status: store.status,
-        detailUrl: store.detailUrl
-      });
-    }
-  }
-
-  // 2. Fetch Nando's if applicable
-  if (chain === 'all' || chain === 'nandos') {
-    const nandosWhere: any = {};
-    if (halal !== undefined) nandosWhere.isHalal = halal;
-    if (outdoorSeating !== undefined) nandosWhere.hasOutdoorSeating = outdoorSeating;
-
-    if (q && q.trim()) {
-      const term = q.trim();
-      nandosWhere.OR = [
-        { name: { contains: term } },
-        { city: { contains: term } },
-        { postalCode: { contains: term } },
-        { street: { contains: term } }
-      ];
-    }
-
-    const nandosStores = await prisma.nandosRestaurant.findMany({
-      where: nandosWhere
-    });
-
-    for (const store of nandosStores) {
-      let distanceMiles: number | null = null;
-      if (lat !== undefined && lng !== undefined && store.latitude && store.longitude) {
-        distanceMiles = calculateDistanceMiles(lat, lng, store.latitude, store.longitude);
-        if (distanceMiles > radius) continue; // Out of radius
-      }
-
-      results.push({
-        id: `nandos-${store.branchCode}`,
-        name: store.name,
-        street: store.street,
-        city: store.city,
-        postalCode: store.postalCode,
-        latitude: store.latitude,
-        longitude: store.longitude,
-        distanceMiles,
-        isHalal: store.isHalal,
-        amenitiesList: extractNandosAmenities(store),
-        status: store.status,
-        detailUrl: store.detailUrl,
-        telephone: store.telephone
-      });
-    }
-  }
+  // 2. Query adapters concurrently
+  const searchPromises = targetAdapters.map((adapter) =>
+    adapter ? adapter.search(query) : Promise.resolve([])
+  );
+  const searchResults = await Promise.all(searchPromises);
+  const results: MobileRestaurantItem[] = searchResults.flat();
 
   // 3. Sort results
   if (lat !== undefined && lng !== undefined) {
-    // Sort primarily by distance
+    // Sort primarily by distance if coordinates provided
     results.sort((a, b) => {
       const distA = a.distanceMiles ?? 999999;
       const distB = b.distanceMiles ?? 999999;
@@ -241,95 +73,65 @@ export async function findNearbyRestaurants(query: NearbyQuery) {
 }
 
 /**
- * Get detailed KFC Restaurant by Store ID
+ * Lookup restaurant by chain identifier and store ID
+ */
+export async function getRestaurantByChainAndId(chain: string, id: string) {
+  const adapter = chainRegistry.get(chain);
+  if (!adapter) return null;
+  return adapter.getById(id);
+}
+
+/**
+ * Single KFC restaurant lookup (backward-compatible delegate)
  */
 export async function getKfcRestaurantById(storeId: string) {
-  const cleanId = storeId.replace(/^kfc-/, '');
-  const store = await prisma.kfcRestaurant.findUnique({
-    where: { storeId: cleanId }
-  });
-
-  if (!store) return null;
-
-  return {
-    ...store,
-    chain: 'KFC',
-    amenitiesList: extractKfcAmenities(store),
-    facilities: store.facilitiesJson ? JSON.parse(store.facilitiesJson) : [],
-    orderModes: store.orderModesJson ? JSON.parse(store.orderModesJson) : [],
-    openingHours: store.openingHoursJson ? JSON.parse(store.openingHoursJson) : []
-  };
+  return kfcAdapter.getById(storeId);
 }
 
 /**
- * Get detailed Nando's Restaurant by Branch Code
+ * Single Nando's restaurant lookup (backward-compatible delegate)
  */
 export async function getNandosRestaurantById(branchCode: string) {
-  const cleanId = branchCode.replace(/^nandos-/, '');
-  const store = await prisma.nandosRestaurant.findUnique({
-    where: { branchCode: cleanId }
-  });
-
-  if (!store) return null;
-
-  return {
-    ...store,
-    chain: 'NANDOS',
-    amenitiesList: extractNandosAmenities(store),
-    amenities: store.amenitiesJson ? JSON.parse(store.amenitiesJson) : [],
-    orderChannels: store.orderChannelsJson ? JSON.parse(store.orderChannelsJson) : [],
-    openingHours: store.openingHoursJson ? JSON.parse(store.openingHoursJson) : []
-  };
+  return nandosAdapter.getById(branchCode);
 }
 
 /**
- * Database & Scraper Statistics
+ * Database & Scraper Statistics across all registered chains
  */
 export async function getDatabaseStats() {
-  const [
-    kfcTotal,
-    kfcHalal,
-    kfcDriveThru,
-    nandosTotal,
-    nandosHalal,
-    nandosOutdoor,
-    recentAudits
-  ] = await Promise.all([
-    prisma.kfcRestaurant.count(),
-    prisma.kfcRestaurant.count({ where: { isHalal: true } }),
-    prisma.kfcRestaurant.count({ where: { hasDriveThru: true } }),
-    prisma.nandosRestaurant.count(),
-    prisma.nandosRestaurant.count({ where: { isHalal: true } }),
-    prisma.nandosRestaurant.count({ where: { hasOutdoorSeating: true } }),
+  const adapters = chainRegistry.getAll();
+
+  const [statsList, recentAudits] = await Promise.all([
+    Promise.all(
+      adapters.map(async (adapter) => {
+        const stats = await adapter.getStats();
+        return { chainId: adapter.chainId, stats };
+      })
+    ),
     prisma.scrapeAuditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5
     })
   ]);
 
+  const chains: Record<string, any> = {};
+  let totalRestaurants = 0;
+  let totalHalal = 0;
+
+  for (const { chainId, stats } of statsList) {
+    chains[chainId] = stats;
+    totalRestaurants += stats.total;
+    totalHalal += stats.halal;
+  }
+
   return {
-    chains: {
-      kfc: {
-        total: kfcTotal,
-        halal: kfcHalal,
-        nonHalal: kfcTotal - kfcHalal,
-        halalPercentage: kfcTotal > 0 ? Math.round((kfcHalal / kfcTotal) * 1000) / 10 : 0,
-        driveThru: kfcDriveThru
-      },
-      nandos: {
-        total: nandosTotal,
-        halal: nandosHalal,
-        nonHalal: nandosTotal - nandosHalal,
-        halalPercentage: nandosTotal > 0 ? Math.round((nandosHalal / nandosTotal) * 1000) / 10 : 0,
-        outdoorSeating: nandosOutdoor
-      }
-    },
+    chains,
     totals: {
-      restaurants: kfcTotal + nandosTotal,
-      halalRestaurants: kfcHalal + nandosHalal,
+      restaurants: totalRestaurants,
+      halalRestaurants: totalHalal,
       overallHalalPercentage:
-        kfcTotal + nandosTotal > 0
-          ? Math.round(((kfcHalal + nandosHalal) / (kfcTotal + nandosTotal)) * 1000) / 10
+        totalRestaurants > 0
+          ? Math.round((totalHalal / totalRestaurants) * 1000) / 10
           : 0
     },
     recentScrapes: recentAudits

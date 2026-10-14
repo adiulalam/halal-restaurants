@@ -48,3 +48,4 @@ VOLUME [ "/app/data" ]
 EXPOSE 3001
 
 CMD ["npm", "start", "-w", "apps/api"]
+
