@@ -27,7 +27,8 @@
     "paths": {
       "@halal-restaurants/types": ["libs/types/src/index.ts"],
       "@halal-restaurants/scrapers": ["libs/scrapers/src/index.ts"],
-      "@halal-restaurants/ui": ["libs/ui/src/index.ts"]
+      "@halal-restaurants/ui": ["libs/ui/src/index.ts"],
+      "@halal-restaurants/data": ["libs/data/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

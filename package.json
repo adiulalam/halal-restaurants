@@ -11,7 +11,7 @@
     "start:nandos:web": "npm run web -w apps/mobile-nandos",
     "start:nandos:android": "npm run android -w apps/mobile-nandos",
     "start:nandos:ios": "npm run ios -w apps/mobile-nandos",
-    "sync:data": "tsx scripts/update-offline-data.ts",
+    "sync:data": "tsx --tsconfig tsconfig.base.json libs/data/src/sync.ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

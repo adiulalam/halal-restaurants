@@ -45,30 +45,6 @@
     "detailUrl": "https://www.kfc.co.uk/kfc-near-me/camborne-trevenson-gateway"
   },
   {
-    "id": "kfc-08716",
-    "name": "Leigh - Parsonage Retail Park",
-    "street": "Parsonage Retail Park, Atherleigh Way",
-    "city": "Leigh",
-    "postalCode": "WN7 5SJ",
-    "latitude": 53.4987494,
-    "longitude": -2.5270339,
-    "distanceMiles": null,
-    "isHalal": false,
-    "amenitiesList": [
-      "Drive Thru",
-      "Free Wifi",
-      "Disability Access",
-      "Baby Changing",
-      "Rewards Arcade",
-      "Baby Changing Room",
-      "KFC Delivery",
-      "Mobile Ordering",
-      "Loyalty Codes"
-    ],
-    "status": "available",
-    "detailUrl": "https://www.kfc.co.uk/kfc-near-me/leigh-parsonage-retail-park"
-  },
-  {
     "id": "kfc-05020",
     "name": "Clacton - Brook Retail Park",
     "street": "Brook Retail Park, London Road",
@@ -8215,6 +8191,30 @@
     ],
     "status": "available",
     "detailUrl": "https://www.kfc.co.uk/kfc-near-me/hackney-mare-street"
+  },
+  {
+    "id": "kfc-08716",
+    "name": "Leigh - Parsonage Retail Park",
+    "street": "Parsonage Retail Park, Atherleigh Way",
+    "city": "Leigh",
+    "postalCode": "WN7 5SJ",
+    "latitude": 53.4987494,
+    "longitude": -2.5270339,
+    "distanceMiles": null,
+    "isHalal": false,
+    "amenitiesList": [
+      "Drive Thru",
+      "Free Wifi",
+      "Disability Access",
+      "Baby Changing",
+      "Rewards Arcade",
+      "Baby Changing Room",
+      "KFC Delivery",
+      "Mobile Ordering",
+      "Loyalty Codes"
+    ],
+    "status": "available",
+    "detailUrl": "https://www.kfc.co.uk/kfc-near-me/leigh-parsonage-retail-park"
   },
   {
     "id": "kfc-11753",

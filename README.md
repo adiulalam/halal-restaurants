@@ -27,10 +27,8 @@ halal-restaurants/
 ├── libs/
 │   ├── ui/                       # Shared UI library (HalalBadge, AmenityChip, RestaurantCard, Theme tokens)
 │   ├── scrapers/                 # Direct client fetchers & parsers for KFC and Nando's
-│   └── types/                    # Shared TypeScript interfaces & Zod validation schemas
-│
-├── scripts/
-│   └── update-offline-data.ts    # Utility to refresh bundled offline JSON datasets anytime
+│   ├── types/                    # Shared TypeScript interfaces & Zod validation schemas
+│   └── data/                     # Raw sample datasets, fixtures, and data synchronization utilities
 │
 ├── package.json                  # Clean, lightweight scripts
 └── tsconfig.base.json            # Strict TypeScript configuration
